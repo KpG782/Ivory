@@ -1,6 +1,8 @@
 "use client";
 
+import { memo } from "react";
 import type { ChatMessage } from "../types";
+import { MarkdownMessage } from "./MarkdownMessage";
 import { QuoteCard } from "./QuoteCard";
 import { TypingIndicator } from "./TypingIndicator";
 
@@ -9,10 +11,16 @@ function MessageBody({ message }: { message: ChatMessage }) {
     return <TypingIndicator />;
   }
 
-  return <p>{message.content}</p>;
+  // User text is shown verbatim (preserve their line breaks); assistant
+  // answers are rendered as lightweight Markdown.
+  if (message.role === "assistant") {
+    return <MarkdownMessage content={message.content} />;
+  }
+
+  return <p className="whitespace-pre-wrap">{message.content}</p>;
 }
 
-export function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubbleComponent({ message }: { message: ChatMessage }) {
   const bubbleClassName =
     message.role === "user"
       ? "ml-auto w-full max-w-[92%] rounded-[1.4rem] bg-[#1f1f1f] px-4 py-3 text-white shadow-[0_10px_30px_rgba(15,23,42,0.14)] sm:max-w-[70%]"
@@ -29,14 +37,19 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
     <article className={`ui-rise-in ${bubbleClassName} ${stateClassName}`.trim()}>
       <div
         className={`mb-2 flex flex-wrap items-center justify-between gap-3 text-[11px] uppercase tracking-[0.14em] ${
-          message.role === "user" ? "text-white/60" : "text-slate-400"
+          message.role === "user" ? "text-white/70" : "text-slate-500"
         }`}
       >
         <span>{message.role === "user" ? "You" : "ShieldBase"}</span>
-        {message.streaming ? <span className="text-blue-600">Live</span> : null}
+        {message.streaming ? (
+          <span className="flex items-center gap-1 text-cyan-500" role="status" aria-live="polite">
+            <span className="ui-soft-pulse inline-block h-1.5 w-1.5 rounded-full bg-cyan-500" />
+            Live
+          </span>
+        ) : null}
       </div>
       <div
-        className={`whitespace-pre-wrap break-words text-sm leading-6 sm:text-[0.95rem] ${
+        className={`break-words text-sm leading-6 sm:text-[0.95rem] ${
           message.role === "user" ? "text-white" : "text-slate-800"
         }`}
         style={{ overflowWrap: "anywhere" }}
@@ -51,3 +64,9 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
     </article>
   );
 }
+
+/**
+ * Memoized so streaming a token only re-renders the live bubble, not the
+ * entire message list.
+ */
+export const MessageBubble = memo(MessageBubbleComponent);

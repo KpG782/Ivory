@@ -107,11 +107,18 @@ def rag_answer(
     on_token = get_on_token() if client is None else None
 
     prompt = _build_prompt(query, retrieved)
-    logger.debug("rag_answer: calling LLM model=%s streaming=%s", rag_client.model, on_token is not None)
+    history = _recent_history(messages, query)
+    logger.debug(
+        "rag_answer: calling LLM model=%s streaming=%s history_turns=%d",
+        rag_client.model,
+        on_token is not None,
+        len(history),
+    )
     try:
         content = rag_client.chat_text(
             system_prompt=RAG_SYSTEM_PROMPT,
             user_prompt=prompt,
+            history=history,
             temperature=0.2,
             max_tokens=450,
             on_token=on_token,
@@ -166,6 +173,29 @@ def _extract_query(state: Mapping[str, Any], messages: Sequence[dict[str, Any]])
         return raw_message.strip()
 
     return ""
+
+
+def _recent_history(
+    messages: Sequence[dict[str, Any]],
+    current_query: str,
+    *,
+    max_turns: int = 6,
+) -> list[dict[str, str]]:
+    """Return the recent prior turns (excluding the current question) for the LLM.
+
+    The last message is the question being answered now (already embedded in the
+    prompt), so it is dropped. We keep the most recent ``max_turns`` user/
+    assistant exchanges so follow-ups resolve in context without sending the
+    entire transcript.
+    """
+    prior = list(messages[:-1]) if messages else []
+    turns: list[dict[str, str]] = []
+    for message in prior:
+        role = str(message.get("role", ""))
+        content = message.get("content")
+        if role in {"user", "assistant"} and isinstance(content, str) and content.strip():
+            turns.append({"role": role, "content": content})
+    return turns[-(max_turns * 2):]
 
 
 def _normalize_messages(messages: Any) -> list[dict[str, Any]]:

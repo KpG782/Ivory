@@ -106,7 +106,10 @@ export function ChatWindow({
             <MessageBubble key={message.id} message={message} />
           ))}
           {isSending ? (
-            <div className="ui-scale-in ui-sheen mr-auto flex w-full max-w-[92%] items-center gap-3 rounded-[1.4rem] border border-black/8 bg-white/90 px-4 py-3 text-sm text-slate-600 shadow-[0_10px_30px_rgba(15,23,42,0.06)] sm:max-w-[78%]">
+            <div
+              role="status"
+              aria-live="polite"
+              className="ui-scale-in ui-sheen mr-auto flex w-full max-w-[92%] items-center gap-3 rounded-[1.4rem] border border-black/8 bg-white/90 px-4 py-3 text-sm text-slate-600 shadow-[0_10px_30px_rgba(15,23,42,0.06)] sm:max-w-[78%]">
               <TypingIndicator />
               <span>Generating response...</span>
             </div>
@@ -115,7 +118,9 @@ export function ChatWindow({
       </div>
 
       {error ? (
-        <div className="mx-auto mt-2 w-full max-w-3xl rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+        <div
+          role="alert"
+          className="mx-auto mt-2 w-full max-w-3xl rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
           {error}
         </div>
       ) : null}
@@ -155,9 +160,10 @@ export function ChatWindow({
               <button
                 type="submit"
                 className="ui-hover-lift w-full rounded-full bg-[#1f1f1f] px-4 py-2 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
-                disabled={!draft.trim() || isResetting}
+                disabled={!draft.trim() || isResetting || isSending}
+                aria-busy={isSending}
               >
-                Send
+                {isSending ? "Sending..." : "Send"}
             </button>
           </div>
         </div>

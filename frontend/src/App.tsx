@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChatWindow } from "./components/ChatWindow";
 import { QuoteCard } from "./components/QuoteCard";
 import { ShieldBaseLogo } from "./components/ShieldBaseLogo";
@@ -31,7 +31,7 @@ function StatePill({
 }) {
   return (
     <div className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5">
-      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
         {label}
       </span>
       <span className="ml-2 text-xs font-semibold text-slate-700">{value}</span>
@@ -85,6 +85,7 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const usernameInputRef = useRef<HTMLInputElement | null>(null);
 
   // Optional username hint from NEXT_PUBLIC_AUTH_DEMO_USER (safe to expose).
   // The password is never bundled into client code — it is validated server-side.
@@ -108,6 +109,13 @@ export default function App() {
         setAuthReady(true);
       });
   }, []);
+
+  // Move focus to the username field once the login screen is shown.
+  useEffect(() => {
+    if (authReady && !isAuthenticated) {
+      usernameInputRef.current?.focus();
+    }
+  }, [authReady, isAuthenticated]);
 
   const submitDraft = async () => {
     const trimmed = draft.trim();
@@ -184,11 +192,13 @@ export default function App() {
             <label className="grid gap-2">
               <span className="text-sm font-medium text-slate-700">Username</span>
               <input
+                ref={usernameInputRef}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-[#bca46b] focus:ring-4 focus:ring-[#efe4c8]"
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") void handleLogin(); }}
                 placeholder="Enter username"
+                autoComplete="username"
               />
             </label>
             <label className="grid gap-2">
@@ -201,6 +211,7 @@ export default function App() {
                   onChange={(event) => setPassword(event.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") void handleLogin(); }}
                   placeholder="Enter password"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"

@@ -7,7 +7,6 @@ import os
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 from typing import Any
-from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,8 +16,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
+import graph
 from env import load_project_env
-from graph import run_graph
 from state import ChatState, build_initial_state
 from streaming_context import clear_on_token, set_on_token
 
@@ -52,103 +51,42 @@ def _is_rate_limit_disabled() -> bool:
 
 
 # ── Session store ─────────────────────────────────────────────────────────────
-SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "3600"))  # 1 hour default
-
-
-def _init_redis_client() -> Any:
-    redis_url = os.getenv("REDIS_URL", "").strip()
-    if not redis_url:
-        return None
-    try:
-        import redis as redis_lib  # type: ignore[import]
-
-        client = redis_lib.from_url(
-            redis_url,
-            decode_responses=True,
-            socket_connect_timeout=2,
-            socket_timeout=2,
-        )
-        client.ping()
-        logger.info("Redis session store connected: %s", redis_url.split("@")[-1])
-        return client
-    except Exception as exc:
-        logger.warning(
-            "Redis unavailable (%s) — falling back to in-memory session store. "
-            "Sessions will be lost on restart.",
-            exc,
-        )
-        return None
-
-
-class _SessionStore:
-    """Session store with optional Redis persistence and in-memory fallback.
-
-    Provides a dict-like interface so existing code and tests that access
-    SESSION_STORE[key] continue to work unchanged.
-
-    When REDIS_URL is set and Redis is reachable:
-    - Sessions survive server restarts.
-    - Multiple backend instances share the same session data (horizontal scaling).
-    - Each session has a TTL; idle sessions are evicted automatically.
-
-    When Redis is unavailable, the store falls back to an in-process dict
-    with the original behaviour (sessions lost on restart, no scaling).
-    """
-
-    def __init__(self) -> None:
-        self._memory: dict[str, ChatState] = {}
-        self._redis: Any = _init_redis_client()
-
-    # -- dict-like interface --------------------------------------------------
-
+# Conversation state now lives in the LangGraph checkpointer (see graph.py),
+# keyed by thread_id == session_id. This view keeps the dict-like SESSION_STORE
+# interface (used by /debug and the test suite) but reads/writes straight
+# through the checkpointer, so there is one source of truth and no manual save.
+class _CheckpointSessionView:
     def get(self, key: str, default: ChatState | None = None) -> ChatState | None:
-        if self._redis is not None:
-            try:
-                raw = self._redis.get(f"session:{key}")
-                if raw:
-                    return ChatState(**json.loads(raw))
-            except Exception as exc:
-                logger.warning("Redis GET failed for session %s: %s — using in-memory", key, exc)
-        return self._memory.get(key, default)
-
-    def __setitem__(self, key: str, value: ChatState) -> None:
-        self._memory[key] = value
-        if self._redis is not None:
-            try:
-                serializable = {k: v for k, v in dict(value).items()}
-                self._redis.setex(
-                    f"session:{key}",
-                    SESSION_TTL_SECONDS,
-                    json.dumps(serializable),
-                )
-            except Exception as exc:
-                logger.warning("Redis SET failed for session %s: %s — state stored in memory only", key, exc)
+        state = graph.get_session_state(key)
+        return state if state is not None else default
 
     def __getitem__(self, key: str) -> ChatState:
-        result = self.get(key)
-        if result is None:
+        state = graph.get_session_state(key)
+        if state is None:
             raise KeyError(key)
-        return result
+        return state
+
+    def __setitem__(self, key: str, value: ChatState) -> None:
+        graph.set_session_state(key, value)
 
     def __contains__(self, key: object) -> bool:
-        return self.get(str(key)) is not None  # type: ignore[arg-type]
+        return graph.get_session_state(str(key)) is not None
 
     def clear(self) -> None:
-        """Clear in-memory store. Used by tests; does not flush Redis."""
-        self._memory.clear()
+        graph.reset_all()
 
     def __len__(self) -> int:
-        return len(self._memory)
+        return graph.session_count()
 
 
-SESSION_STORE = _SessionStore()
+SESSION_STORE = _CheckpointSessionView()
 
 
 # ── Pydantic models ───────────────────────────────────────────────────────────
 
 class ChatRequest(BaseModel):
-    message: str = Field(min_length=1)
-    session_id: str = Field(min_length=1)
+    message: str = Field(min_length=1, max_length=4000)
+    session_id: str = Field(min_length=1, max_length=200)
 
 
 class ResetRequest(BaseModel):
@@ -247,8 +185,8 @@ async def debug() -> JSONResponse:
     return JSONResponse({
         "knowledge_base": kb_status,
         "llm": llm_status,
-        "session_count": len(SESSION_STORE),
-        "session_backend": "redis" if SESSION_STORE._redis is not None else "memory",
+        "session_count": graph.session_count(),
+        "session_backend": "langgraph-checkpointer",
         "cors_origins": _CORS_ORIGINS,
         "rate_limit_enabled": not _is_rate_limit_disabled(),
     })
@@ -257,16 +195,13 @@ async def debug() -> JSONResponse:
 @app.post("/reset")
 @limiter.limit(_RESET_RATE_LIMIT, exempt_when=_is_rate_limit_disabled)
 async def reset_session(request: Request, payload: ResetRequest) -> JSONResponse:
-    SESSION_STORE[payload.session_id] = build_initial_state(payload.session_id)
+    graph.set_session_state(payload.session_id, build_initial_state(payload.session_id))
     return JSONResponse({"status": "reset", "session_id": payload.session_id})
 
 
 @app.post("/chat")
 @limiter.limit(_CHAT_RATE_LIMIT, exempt_when=_is_rate_limit_disabled)
 async def chat(request: Request, payload: ChatRequest) -> StreamingResponse:
-    session_state = SESSION_STORE.get(payload.session_id) or build_initial_state(payload.session_id)
-    session_state["trace_id"] = str(uuid4())
-
     loop = asyncio.get_running_loop()
     token_queue: asyncio.Queue[str | None] = asyncio.Queue()
     tokens_emitted: dict[str, bool] = {"any": False}
@@ -278,14 +213,15 @@ async def chat(request: Request, payload: ChatRequest) -> StreamingResponse:
     def _run_in_thread() -> ChatState:
         """Run the synchronous LangGraph in a thread-pool worker.
 
+        run_graph loads the prior checkpoint, runs one turn, and the
+        checkpointer atomically persists the result — there is no manual save.
         The on_token callback is registered in thread-local storage so rag.py
-        can find it without any changes to ChatState or the graph signatures.
-        A None sentinel is always placed on the queue when the thread exits
-        (even on exception) so the async generator unblocks correctly.
+        can find it. A None sentinel is always placed on the queue when the
+        thread exits (even on exception) so the async generator unblocks.
         """
         set_on_token(_on_token)
         try:
-            return run_graph(session_state, payload.message)
+            return graph.run_graph(payload.session_id, payload.message)
         finally:
             clear_on_token()
             loop.call_soon_threadsafe(token_queue.put_nowait, None)  # sentinel
@@ -306,7 +242,6 @@ async def chat(request: Request, payload: ChatRequest) -> StreamingResponse:
             yield _format_sse("error", {"message": f"The assistant could not process the request: {exc}"})
             return
 
-        SESSION_STORE[payload.session_id] = next_state
         assistant_message = _last_assistant_message(next_state)
 
         if not assistant_message:

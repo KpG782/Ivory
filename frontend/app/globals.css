@@ -71,6 +71,24 @@ input {
   font: inherit;
 }
 
+/* Interactive elements should signal they are clickable. */
+button:not(:disabled),
+a[href],
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+/* Visible keyboard focus on actionable elements. Inputs/textareas keep their
+   own focus:ring styles, so they are intentionally excluded here. */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-gold-500);
+  outline-offset: 2px;
+  border-radius: 9999px;
+}
+
 ::selection {
   background: rgba(212, 187, 132, 0.4);
 }

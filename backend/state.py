@@ -18,6 +18,10 @@ class ChatState(TypedDict, total=False):
     last_error: str | None
     trace_id: str | None
     current_field: str | None
+    # Transient: the deterministic route chosen for the current turn. Written by
+    # the router node, read by the conditional edge. Persisted but recomputed
+    # every turn, so its stored value is never trusted across turns.
+    route: str
 
 
 def build_initial_state(session_id: str) -> ChatState:
@@ -34,6 +38,7 @@ def build_initial_state(session_id: str) -> ChatState:
         last_error=None,
         trace_id=str(uuid4()),
         current_field=None,
+        route="rag",
     )
 
 

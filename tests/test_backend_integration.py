@@ -48,7 +48,6 @@ def _post_chat(client: TestClient, session_id: str, message: str) -> list[dict[s
 @pytest.fixture()
 def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     import nodes.rag as rag
-    import nodes.router as router
 
     # Disable rate limiting so the test suite does not hit per-IP limits.
     # _is_rate_limit_disabled() reads this env var at request time, so
@@ -57,7 +56,8 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
 
     main.SESSION_STORE.clear()
 
-    monkeypatch.setattr(router, "_classify_with_llm", lambda *args, **kwargs: None)
+    # Routing is deterministic (no LLM), so there is no classifier to stub. We
+    # only stub the RAG LLM client + retrieval so tests are hermetic/offline.
     monkeypatch.setattr(rag, "_build_client_or_none", lambda: None)
     monkeypatch.setattr(
         rag,
@@ -231,32 +231,19 @@ def test_mid_flow_question_preserves_quote_progress(client: TestClient) -> None:
     assert main.SESSION_STORE[session_id]["collected_data"]["vehicle_year"] == 2019
 
 
-def test_live_llm_misclassification_does_not_break_numeric_quote_reply(
-    client: TestClient,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    import nodes.router as router
-
-    session_id = "llm-misclassification-session"
+def test_numeric_field_reply_stays_in_quote_flow(client: TestClient) -> None:
+    """A bare value like "2019" is always stored as the field, never re-routed."""
+    session_id = "numeric-field-session"
 
     _post_chat(client, session_id, "I want a quote for auto insurance")
-    monkeypatch.setattr(router, "_classify_with_llm", lambda *args, **kwargs: "question")
-
     events = _post_chat(client, session_id, "2019")
 
     assert events[-1]["data"]["message"] == "What is the vehicle make? (e.g. Toyota)"
     assert main.SESSION_STORE[session_id]["collected_data"]["vehicle_year"] == 2019
 
 
-def test_live_llm_misclassification_does_not_break_quote_start(
-    client: TestClient,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    import nodes.router as router
-
-    monkeypatch.setattr(router, "_classify_with_llm", lambda *args, **kwargs: "question")
-
-    events = _post_chat(client, "llm-quote-start-session", "I want a quote for auto insurance")
+def test_explicit_quote_request_starts_collection(client: TestClient) -> None:
+    events = _post_chat(client, "quote-start-session", "I want a quote for auto insurance")
     payload = events[-1]["data"]
 
     assert payload["message"] == "What year is the vehicle? (e.g. 2019)"
@@ -284,16 +271,10 @@ def test_comma_separated_auto_details_fill_multiple_fields(client: TestClient) -
     assert state["collected_data"]["accidents_last_5yr"] == 0
 
 
-def test_live_llm_misclassification_still_resumes_after_mid_quote_question(
-    client: TestClient,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    import nodes.router as router
-
-    session_id = "llm-mid-quote-question-session"
+def test_mid_quote_question_answers_then_resumes_same_field(client: TestClient) -> None:
+    session_id = "mid-quote-question-session"
 
     _post_chat(client, session_id, "I want a quote for auto insurance")
-    monkeypatch.setattr(router, "_classify_with_llm", lambda *args, **kwargs: "question")
 
     events = _post_chat(client, session_id, "What does comprehensive coverage include?")
     payload = events[-1]["data"]
@@ -639,3 +620,69 @@ def test_switching_product_mid_flow_resets_to_new_product(client: TestClient) ->
     assert state["insurance_type"] == "home"
     assert state["current_field"] == "property_type"
     assert state["collected_data"] == {}
+
+
+# ── Deterministic re-architecture: durable memory, RAG history, pure routing ──
+
+def test_state_persists_across_graph_rebuild(client: TestClient) -> None:
+    """State lives in the checkpointer, not the in-process graph object.
+
+    Rebuilding the compiled graph (a stand-in for a process restart) while
+    reusing the same checkpointer must preserve the conversation state.
+    """
+    import graph
+
+    _post_chat(client, "persist-session", "I want a quote for auto insurance")
+    _post_chat(client, "persist-session", "2019")
+
+    graph.COMPILED_GRAPH = graph._build_graph().compile(checkpointer=graph._checkpointer)
+
+    state = graph.get_session_state("persist-session")
+    assert state is not None
+    assert state["collected_data"]["vehicle_year"] == 2019
+    assert state["current_field"] == "vehicle_make"
+
+
+def test_rag_includes_prior_conversation_as_history(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A follow-up question sends prior turns to the LLM as history."""
+    import nodes.rag as rag
+
+    captured: dict[str, Any] = {}
+
+    class _FakeClient:
+        model = "fake-model"
+
+        def chat_text(self, *, system_prompt, user_prompt, history=None, on_token=None, **_):
+            captured["history"] = list(history or [])
+            return "Here is the canned answer."
+
+    monkeypatch.setattr(rag, "_build_client_or_none", lambda: _FakeClient())
+
+    _post_chat(client, "history-session", "Tell me about life insurance")
+    _post_chat(client, "history-session", "What is the maximum benefit?")
+
+    history = captured.get("history")
+    assert history is not None, "RAG did not pass conversation history to the LLM"
+    user_turns = [m["content"].lower() for m in history if m["role"] == "user"]
+    assistant_turns = [m["content"] for m in history if m["role"] == "assistant"]
+    assert any("life insurance" in turn for turn in user_turns)
+    assert "Here is the canned answer." in assistant_turns
+
+
+def test_routing_is_a_pure_function_without_any_llm() -> None:
+    """decide() routes purely from (state, message) — no LLM, no randomness."""
+    from nodes.router import decide
+
+    state = {
+        "mode": "transactional",
+        "quote_step": "collect",
+        "current_field": "vehicle_year",
+        "insurance_type": "auto",
+    }
+    assert decide(state, "2019") == "collect"
+    assert decide(state, "what does comprehensive cover?") == "answer_then_resume"
+    assert decide(state, "restart") == "confirm"
+    assert decide(dict(state), "2019") == decide(dict(state), "2019")

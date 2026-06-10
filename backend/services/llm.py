@@ -143,6 +143,7 @@ class OpenRouterClient:
         *,
         system_prompt: str,
         user_prompt: str,
+        history: Sequence[Mapping[str, Any]] | None = None,
         temperature: float = 0.2,
         max_tokens: int = 512,
         top_p: float = 1.0,
@@ -150,6 +151,10 @@ class OpenRouterClient:
         on_token: Callable[[str], None] | None = None,
     ) -> str:
         """Return the assistant reply as a plain string.
+
+        *history* is an optional list of prior ``{role, content}`` turns placed
+        between the system prompt and the current user prompt, so the model can
+        resolve follow-up questions ("what is the max benefit?") in context.
 
         When *on_token* is provided the request uses OpenRouter's streaming
         API and each content delta is forwarded to the callback as it arrives.
@@ -160,16 +165,14 @@ class OpenRouterClient:
             return self._stream_chat_text(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
+                history=history,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 on_token=on_token,
             )
 
         response = self.chat(
-            [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            self._compose_messages(system_prompt, history, user_prompt),
             temperature=temperature,
             max_tokens=max_tokens,
             top_p=top_p,
@@ -177,11 +180,28 @@ class OpenRouterClient:
         )
         return response.content
 
+    @staticmethod
+    def _compose_messages(
+        system_prompt: str,
+        history: Sequence[Mapping[str, Any]] | None,
+        user_prompt: str,
+    ) -> list[dict[str, str]]:
+        """Build the messages array: system + sanitized history + current user."""
+        messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
+        for turn in history or []:
+            role = str(turn.get("role", ""))
+            content = turn.get("content")
+            if role in {"user", "assistant"} and isinstance(content, str) and content.strip():
+                messages.append({"role": role, "content": content})
+        messages.append({"role": "user", "content": user_prompt})
+        return messages
+
     def _stream_chat_text(
         self,
         *,
         system_prompt: str,
         user_prompt: str,
+        history: Sequence[Mapping[str, Any]] | None = None,
         temperature: float,
         max_tokens: int,
         on_token: Callable[[str], None],
@@ -189,10 +209,7 @@ class OpenRouterClient:
         """Stream tokens via *on_token* callback; return the full assembled content."""
         payload: dict[str, Any] = {
             "model": self.model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            "messages": self._compose_messages(system_prompt, history, user_prompt),
             "temperature": temperature,
             "max_tokens": max_tokens,
             "stream": True,
