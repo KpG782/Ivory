@@ -92,8 +92,7 @@ function downloadTextFile(filename: string, content: string, type: string): void
 }
 
 interface QuoteCardProps {
-  quote: QuoteResult | null;
-  variant?: "spotlight" | "embedded";
+  quote: QuoteResult;
 }
 
 const PRIORITY_FIELDS = [
@@ -107,25 +106,16 @@ const PRIORITY_FIELDS = [
   "policy_type"
 ];
 
-export function QuoteCard({
-  quote,
-  variant = "embedded"
-}: QuoteCardProps) {
+export function QuoteCard({ quote }: QuoteCardProps) {
   const [exportStatus, setExportStatus] = useState<string | null>(null);
 
-  const cardClassName =
-    variant === "spotlight"
-      ? "ui-scale-in ui-sheen rounded-[1.5rem] border border-black/8 bg-white/95 p-5 text-slate-900 shadow-[0_16px_44px_rgba(15,23,42,0.08)] backdrop-blur"
-      : "ui-scale-in rounded-[1.25rem] border border-black/8 bg-[#fbfbf8] p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)]";
-
-  const premium = quote ? formatCurrency(quote) : null;
-  const summary = quote ? quote.summary || quote.product_type || "Insurance quote" : null;
+  const premium = formatCurrency(quote);
+  const product = quote.product_type
+    ? `${String(quote.product_type)} insurance quote`
+    : "Insurance quote";
+  const coverage = quote.coverage_level ? String(quote.coverage_level) : null;
 
   const filteredEntries = useMemo(() => {
-    if (!quote) {
-      return [];
-    }
-
     return Object.entries(quote).filter(
       ([key, value]) =>
         ![
@@ -133,7 +123,8 @@ export function QuoteCard({
           "product_type",
           "premium",
           "annual_premium",
-          "currency"
+          "currency",
+          "coverage_level"
         ].includes(key) && value !== undefined && value !== null && value !== ""
     );
   }, [quote]);
@@ -146,14 +137,10 @@ export function QuoteCard({
 
         return (leftIndex === -1 ? 999 : leftIndex) - (rightIndex === -1 ? 999 : rightIndex);
       })
-      .slice(0, variant === "spotlight" ? 6 : 4);
-  }, [filteredEntries, variant]);
+      .slice(0, 4);
+  }, [filteredEntries]);
 
   async function handleCopyJson(): Promise<void> {
-    if (!quote) {
-      return;
-    }
-
     const json = toPrettyJson(quote);
     try {
       await navigator.clipboard.writeText(json);
@@ -164,10 +151,6 @@ export function QuoteCard({
   }
 
   function handleDownloadJson(): void {
-    if (!quote) {
-      return;
-    }
-
     downloadTextFile(
       buildExportFileName(quote, "json"),
       toPrettyJson(quote),
@@ -177,10 +160,6 @@ export function QuoteCard({
   }
 
   function handleDownloadCsv(): void {
-    if (!quote) {
-      return;
-    }
-
     downloadTextFile(
       buildExportFileName(quote, "csv"),
       toCsv(quote),
@@ -189,88 +168,28 @@ export function QuoteCard({
     setExportStatus("CSV downloaded");
   }
 
-  if (!quote) {
-    return (
-      <section className={cardClassName}>
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          Quote summary
-        </p>
-        <p className="mt-3 text-sm text-slate-500">Draft quote in progress.</p>
-        <div className="mt-4 rounded-xl border border-dashed border-slate-300 px-3 py-4 text-center text-sm text-slate-400">
-          Waiting for premium
-        </div>
-      </section>
-    );
-  }
-
   return (
-    <section className={`${cardClassName} min-w-0`}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Quote summary
-          </p>
-          <h2 className="mt-2 break-words text-base font-semibold text-slate-900">
-            {summary}
-          </h2>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            className="inline-flex h-8 items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-            onClick={() => {
-              void handleCopyJson();
-            }}
-            title="Copy JSON"
-            aria-label="Copy JSON"
-          >
-            <span className="material-symbols-outlined text-[14px]">content_copy</span>
-            <span>JSON</span>
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-8 items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-            onClick={handleDownloadJson}
-            title="Download JSON"
-            aria-label="Download JSON"
-          >
-            <span className="material-symbols-outlined text-[14px]">download</span>
-            <span>JSON</span>
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-8 items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-            onClick={handleDownloadCsv}
-            title="Download CSV for Excel"
-            aria-label="Download CSV for Excel"
-          >
-            <span className="material-symbols-outlined text-[14px]">table_view</span>
-            <span>CSV</span>
-          </button>
-        </div>
+    <section className="ui-scale-in min-w-0 overflow-hidden rounded-xl border border-line bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b border-line bg-soft/50 px-4 py-3">
+        <p className="min-w-0 truncate text-sm font-semibold capitalize text-ink">
+          {product}
+        </p>
+        {coverage ? (
+          <span className="shrink-0 rounded-full bg-teal-tint px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-teal">
+            {coverage}
+          </span>
+        ) : null}
       </div>
 
-      {premium ? (
-        <p className="mt-3 break-words text-2xl font-semibold tracking-[-0.04em] text-emerald-700 sm:text-3xl">
-          {premium}
-        </p>
-      ) : null}
-
-      {exportStatus ? (
-        <p className="mt-2 text-[11px] font-medium text-slate-500">{exportStatus}</p>
-      ) : null}
-
       {entries.length ? (
-        <dl className="mt-4 grid gap-2">
+        <dl className="space-y-2 px-4 py-3 text-sm">
           {entries.map(([key, value]) => (
-            <div
-              key={key}
-              className="ui-hover-lift rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2.5"
-            >
-              <dt className="text-[10px] uppercase tracking-[0.12em] text-slate-500">
-                {key.replace(/_/g, " ")}
-              </dt>
-              <dd className="mt-1 break-words text-sm text-slate-900" style={{ overflowWrap: "anywhere" }}>
+            <div key={key} className="flex justify-between gap-3">
+              <dt className="capitalize text-muted">{key.replace(/_/g, " ")}</dt>
+              <dd
+                className="break-words text-right font-medium text-ink"
+                style={{ overflowWrap: "anywhere" }}
+              >
                 {formatValue(value)}
               </dd>
             </div>
@@ -278,11 +197,55 @@ export function QuoteCard({
         </dl>
       ) : null}
 
-      {filteredEntries.length > entries.length ? (
-        <p className="mt-4 text-xs text-slate-500">
-          Showing the key quote details here to keep the chat focused.
-        </p>
+      {premium ? (
+        <div className="flex items-baseline justify-between border-t border-line px-4 py-3">
+          <span className="text-sm font-semibold text-ink">Premium</span>
+          <span className="font-[family-name:var(--font-display)] text-xl text-teal">
+            {premium}
+            <span className="ml-1 font-sans text-xs text-muted">/yr</span>
+          </span>
+        </div>
       ) : null}
+
+      <div className="flex flex-wrap items-center gap-1.5 px-4 pb-4">
+        <button
+          type="button"
+          className="inline-flex h-8 items-center gap-1 rounded-full border border-line bg-white px-2.5 text-[11px] font-medium text-muted transition-colors hover:border-teal hover:text-teal"
+          onClick={() => {
+            void handleCopyJson();
+          }}
+          title="Copy JSON"
+          aria-label="Copy JSON"
+        >
+          <span className="material-symbols-outlined text-[14px]">content_copy</span>
+          <span>JSON</span>
+        </button>
+        <button
+          type="button"
+          className="inline-flex h-8 items-center gap-1 rounded-full border border-line bg-white px-2.5 text-[11px] font-medium text-muted transition-colors hover:border-teal hover:text-teal"
+          onClick={handleDownloadJson}
+          title="Download JSON"
+          aria-label="Download JSON"
+        >
+          <span className="material-symbols-outlined text-[14px]">download</span>
+          <span>JSON</span>
+        </button>
+        <button
+          type="button"
+          className="inline-flex h-8 items-center gap-1 rounded-full border border-line bg-white px-2.5 text-[11px] font-medium text-muted transition-colors hover:border-teal hover:text-teal"
+          onClick={handleDownloadCsv}
+          title="Download CSV for Excel"
+          aria-label="Download CSV for Excel"
+        >
+          <span className="material-symbols-outlined text-[14px]">table_view</span>
+          <span>CSV</span>
+        </button>
+        {exportStatus ? (
+          <span className="text-[11px] font-medium text-muted" role="status">
+            {exportStatus}
+          </span>
+        ) : null}
+      </div>
     </section>
   );
 }

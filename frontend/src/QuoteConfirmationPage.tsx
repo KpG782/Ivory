@@ -108,7 +108,7 @@ export default function QuoteConfirmationPage() {
                   </div>
 
                   <div className="p-5 sm:p-6 md:p-8">
-                    <QuoteCard quote={chat.quoteResult} variant="spotlight" />
+                    {chat.quoteResult ? <QuoteCard quote={chat.quoteResult} /> : null}
                   </div>
 
                   <div className="flex flex-col gap-3 px-5 pb-6 pt-2 sm:px-6 md:flex-row md:gap-4 md:px-8 md:pb-8">

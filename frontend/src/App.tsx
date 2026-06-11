@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChatWindow } from "./components/ChatWindow";
-import { QuoteCard } from "./components/QuoteCard";
 import { IvoryLogo } from "./components/IvoryLogo";
+import { Sidebar } from "./components/Sidebar";
 import { useChat } from "./hooks/useChat";
+import type { SessionSnapshot } from "./types";
 import {
   checkAuthStatus,
   getDemoUsernameHint,
@@ -14,72 +15,42 @@ import {
   serverLogout,
 } from "./lib/demoAuth";
 
-function formatLabel(value: string | null | undefined, fallback: string) {
-  if (!value) {
-    return fallback;
+const STEP_PROGRESS: Record<string, number> = {
+  identify: 0.15,
+  collect: 0.5,
+  collect_details: 0.5,
+  validate: 0.75,
+  confirm: 1,
+  quote: 1
+};
+
+function flowChipLabel(snapshot: SessionSnapshot | null): string | null {
+  if (snapshot?.mode !== "transactional") {
+    return null;
   }
 
-  return value
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+  const product = snapshot.insurance_type
+    ? `${snapshot.insurance_type} quote`
+    : "Quote";
+  const step = snapshot.quote_step
+    ? snapshot.quote_step.replace(/_/g, " ")
+    : "in progress";
+  return `${product} · ${step}`;
 }
 
-function StatePill({
-  label,
-  value
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5">
-      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-        {label}
-      </span>
-      <span className="ml-2 text-xs font-semibold text-slate-700">{value}</span>
-    </div>
-  );
-}
+function progressFraction(snapshot: SessionSnapshot | null): number | null {
+  if (snapshot?.mode !== "transactional") {
+    return null;
+  }
 
-function NavItem({
-  icon,
-  label,
-  collapsed,
-  active = false,
-  onClick
-}: {
-  icon: string;
-  label: string;
-  collapsed: boolean;
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={collapsed ? label : undefined}
-      aria-label={label}
-      className={`ui-hover-lift flex w-full items-center rounded-xl text-left text-sm font-medium transition ${
-        collapsed ? "justify-center px-0 py-3" : "gap-3 px-3 py-2.5"
-      } ${
-        active
-          ? "bg-white text-slate-950 shadow-[0_8px_20px_rgba(15,23,42,0.06)]"
-          : "text-slate-600 hover:bg-white hover:text-slate-950"
-      }`}
-    >
-      <span className="material-symbols-outlined text-[18px] text-slate-500">
-        {icon}
-      </span>
-      {!collapsed ? <span>{label}</span> : null}
-    </button>
-  );
+  return STEP_PROGRESS[snapshot.quote_step ?? ""] ?? 0.3;
 }
 
 export default function App() {
   const chat = useChat();
   const [draft, setDraft] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [authReady, setAuthReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -128,11 +99,6 @@ export default function App() {
 
     setDraft("");
     await chat.sendMessage(trimmed);
-  };
-
-  const startNewQuote = () => {
-    chat.createNewSession();
-    setDraft("I need a quote for auto insurance.");
   };
 
   const handleAutofillUsername = () => {
@@ -307,333 +273,143 @@ export default function App() {
     );
   }
 
+  const conversationTitle = (() => {
+    const firstUser = chat.messages.find(
+      (message) => message.role === "user" && message.content.trim()
+    );
+    return firstUser ? firstUser.content.trim().slice(0, 60) : "Ivory";
+  })();
+
+  const flowChip = flowChipLabel(chat.sessionSnapshot);
+  const progress = progressFraction(chat.sessionSnapshot);
+  const statusChip = chat.isSending
+    ? "Thinking…"
+    : chat.sessionSnapshot?.has_quote_result
+      ? "Quote ready"
+      : chat.sessionSnapshot?.mode === "transactional"
+        ? "Collecting details"
+        : "Knowledge mode";
+
   return (
-    <main className="ui-fade-in min-h-screen overflow-x-clip text-[#191c1e]">
-      {sidebarOpen ? (
+    <main className="ui-fade-in flex h-svh overflow-hidden bg-ivory text-ink">
+      {mobileNavOpen ? (
         <button
           type="button"
           className="ui-fade-in fixed inset-0 z-30 bg-black/20 backdrop-blur-[1px] lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => setMobileNavOpen(false)}
           aria-label="Close sidebar overlay"
         />
       ) : null}
 
-      <div className="mx-auto flex min-h-screen max-w-[1600px]">
-        <aside
-          className={`${
-            sidebarOpen ? "w-[288px]" : "w-[88px]"
-          } ui-slide-in-left fixed inset-y-0 left-0 z-40 hidden border-r border-black/8 bg-[rgba(250,250,247,0.88)] p-3 backdrop-blur lg:block`}
-        >
-          <div className="flex h-full min-h-0 flex-col gap-3">
-            <div
-              className={`ui-scale-in sticky top-0 z-10 rounded-[1.75rem] border border-black/8 bg-white/70 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.05)] ${
-                sidebarOpen ? "" : "items-center"
-              }`}
-            >
-              <div className={`flex items-center ${sidebarOpen ? "justify-between" : "justify-center"}`}>
-                {sidebarOpen ? (
-                  <div className="flex items-center gap-3">
-                    <IvoryLogo className="h-10 w-10 shrink-0" />
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                        Ivory
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">Workspace</p>
-                    </div>
-                  </div>
-                ) : null}
-                <button
-                  type="button"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
-                  onClick={() => setSidebarOpen((current) => !current)}
-                  aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-                >
-                  <span className="material-symbols-outlined text-[20px]">
-                    {sidebarOpen ? "left_panel_close" : "left_panel_open"}
-                  </span>
-                </button>
-              </div>
+      <aside
+        className={`hidden shrink-0 lg:block ${
+          desktopSidebarOpen ? "w-[264px]" : "w-[64px]"
+        }`}
+      >
+        <Sidebar
+          sessions={chat.savedSessions}
+          collapsed={!desktopSidebarOpen}
+          userLabel={demoUsernameHint || "Workspace"}
+          onNewConversation={chat.createNewSession}
+          onRestoreSession={chat.restoreSession}
+          onToggleCollapsed={() => setDesktopSidebarOpen((current) => !current)}
+          onLogout={() => void handleLogout()}
+        />
+      </aside>
 
-              <div className={`mt-3 space-y-1 ${sidebarOpen ? "" : "mt-0"}`}>
-                <NavItem
-                  icon="chat_bubble"
-                  label="Conversation"
-                  collapsed={!sidebarOpen}
-                  active
-                />
-              </div>
-
-              {sidebarOpen ? (
-                <div className="mt-4 flex flex-col gap-2">
-                  <button
-                    type="button"
-                    className="ui-hover-lift rounded-full bg-[#1f1f1f] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-black"
-                    onClick={startNewQuote}
-                  >
-                    New quote
-                  </button>
-                  <button
-                    type="button"
-                    className="ui-hover-lift rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
-                    onClick={() => void handleLogout()}
-                  >
-                    Logout
-                  </button>
-                </div>
-              ) : null}
-            </div>
-
-            {sidebarOpen ? (
-              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-                <section className="rounded-[1.75rem] border border-black/8 bg-white/70 p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                    Current state
-                  </p>
-                  <div className="mt-4 space-y-3">
-                    <div className="rounded-xl bg-[#fafaf7] px-4 py-3">
-                      <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">
-                        Mode
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">
-                        {chat.sessionSnapshot?.mode === "transactional"
-                          ? "Quote Flow"
-                          : "Knowledge Mode"}
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-[#fafaf7] px-4 py-3">
-                      <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">
-                        Step
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">
-                        {formatLabel(chat.sessionSnapshot?.quote_step, "General questions")}
-                      </p>
-                    </div>
-                    {chat.sessionSnapshot?.insurance_type ? (
-                      <div className="rounded-xl bg-[#fafaf7] px-4 py-3">
-                        <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">
-                          Product
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900">
-                          {formatLabel(chat.sessionSnapshot.insurance_type, "Not selected")}
-                        </p>
-                      </div>
-                    ) : null}
-                    <div className="rounded-xl bg-[#fafaf7] px-4 py-3">
-                      <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">
-                        Status
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">
-                        {chat.statusText}
-                      </p>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="rounded-[1.75rem] border border-black/8 bg-white/70 p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                    Local history
-                  </p>
-                  <div className="mt-4 space-y-2">
-                    {chat.savedSessions.slice(0, 6).map((saved) => (
-                      <button
-                        key={saved.sessionId}
-                        type="button"
-                        className="ui-hover-lift flex w-full min-w-0 flex-col items-start rounded-xl bg-[#fafaf7] px-4 py-3 text-left transition hover:bg-white"
-                        onClick={() => chat.restoreSession(saved)}
-                      >
-                        <span className="w-full truncate text-sm font-semibold text-slate-900">
-                          {saved.preview || "Conversation"}
-                        </span>
-                        <span className="mt-1 w-full break-words text-xs text-slate-500">
-                          {saved.label} • {new Date(saved.updatedAt).toLocaleString()}
-                        </span>
-                      </button>
-                    ))}
-                    {!chat.savedSessions.length ? (
-                      <p className="text-sm text-slate-500">
-                        Local conversation history will appear here.
-                      </p>
-                    ) : null}
-                  </div>
-                </section>
-
-                <QuoteCard quote={chat.quoteResult} variant="spotlight" />
-              </div>
-            ) : (
-              <div className="ui-scale-in rounded-[1.75rem] border border-black/8 bg-white/70 p-2 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
-                <div className="space-y-1">
-                  <NavItem
-                    icon="bolt"
-                    label="New quote"
-                    collapsed
-                    onClick={startNewQuote}
-                  />
-                  <NavItem
-                    icon="logout"
-                    label="Logout"
-                    collapsed
-                    onClick={() => void handleLogout()}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+      {mobileNavOpen ? (
+        <aside className="ui-slide-in-left fixed inset-y-0 left-0 z-40 w-[min(85vw,300px)] bg-ivory shadow-[0_20px_60px_rgba(28,25,23,0.18)] lg:hidden">
+          <Sidebar
+            sessions={chat.savedSessions}
+            collapsed={false}
+            userLabel={demoUsernameHint || "Workspace"}
+            onNewConversation={() => {
+              chat.createNewSession();
+              setMobileNavOpen(false);
+            }}
+            onRestoreSession={(saved) => {
+              chat.restoreSession(saved);
+              setMobileNavOpen(false);
+            }}
+            onToggleCollapsed={() => setMobileNavOpen(false)}
+            onLogout={() => void handleLogout()}
+          />
         </aside>
+      ) : null}
 
-        {sidebarOpen ? (
-          <aside className="ui-slide-in-left fixed inset-y-0 left-0 z-40 w-[min(88vw,320px)] max-w-full border-r border-black/8 bg-[rgba(250,250,247,0.96)] p-3 shadow-[0_20px_60px_rgba(15,23,42,0.18)] backdrop-blur sm:p-4 lg:hidden">
-            <div className="flex h-full flex-col gap-4 overflow-auto">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <IvoryLogo className="h-10 w-10 shrink-0" />
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                      Ivory
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">Workspace</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700"
-                  onClick={() => setSidebarOpen(false)}
-                  aria-label="Close sidebar"
-                >
-                  <span className="material-symbols-outlined text-[20px]">close</span>
-                </button>
-              </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex items-center justify-between gap-3 border-b border-line/70 px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-soft hover:text-ink lg:hidden"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open sidebar"
+            >
+              <span className="material-symbols-outlined text-[20px]">menu</span>
+            </button>
+            <p className="truncate text-sm font-semibold text-ink">
+              {conversationTitle}
+            </p>
+          </div>
 
-              <div className="sticky top-0 z-10 rounded-[1.75rem] border border-black/8 bg-white/80 p-3">
-                <div className="space-y-1">
-                  <NavItem icon="chat_bubble" label="Conversation" collapsed={false} active />
-                </div>
-                <div className="mt-4 flex flex-col gap-2">
-                  <button
-                    type="button"
-                    className="ui-hover-lift rounded-full bg-[#1f1f1f] px-3.5 py-2 text-sm font-semibold text-white"
-                    onClick={() => {
-                      startNewQuote();
-                      setSidebarOpen(false);
-                    }}
-                  >
-                    New quote
-                  </button>
-                  <button
-                    type="button"
-                    className="ui-hover-lift rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700"
-                    onClick={() => void handleLogout()}
-                  >
-                    Logout
-                  </button>
-                </div>
-              </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {flowChip ? (
+              <span className="inline-flex items-center rounded-full bg-teal-tint px-3 py-1 text-xs font-semibold capitalize text-teal">
+                {flowChip}
+              </span>
+            ) : null}
+            <span className="hidden items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1 text-xs font-medium text-muted sm:inline-flex">
+              <span
+                className={`h-1.5 w-1.5 rounded-full bg-teal ${
+                  chat.isSending ? "animate-pulse" : ""
+                }`}
+              />
+              {statusChip}
+            </span>
+            <button
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-soft hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() => void chat.resetSession()}
+              disabled={chat.isSending || chat.isResetting}
+              aria-label="Reset session"
+              title="Reset session"
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                refresh
+              </span>
+            </button>
+          </div>
+        </header>
 
-              <section className="rounded-[1.75rem] border border-black/8 bg-white/80 p-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                  Local history
-                </p>
-                <div className="mt-4 space-y-2">
-                  {chat.savedSessions.slice(0, 5).map((saved) => (
-                    <button
-                      key={saved.sessionId}
-                      type="button"
-                      className="ui-hover-lift flex w-full min-w-0 flex-col items-start rounded-xl bg-[#fafaf7] px-4 py-3 text-left"
-                      onClick={() => {
-                        chat.restoreSession(saved);
-                        setSidebarOpen(false);
-                      }}
-                    >
-                      <span className="w-full truncate text-sm font-semibold text-slate-900">
-                        {saved.preview || "Conversation"}
-                      </span>
-                      <span className="mt-1 w-full break-words text-xs text-slate-500">
-                        {saved.label} • {new Date(saved.updatedAt).toLocaleString()}
-                      </span>
-                    </button>
-                  ))}
-                  {!chat.savedSessions.length ? (
-                    <p className="text-sm text-slate-500">
-                      Local conversation history will appear here.
-                    </p>
-                  ) : null}
-                </div>
-              </section>
-
-              <QuoteCard quote={chat.quoteResult} variant="spotlight" />
-            </div>
-          </aside>
-        ) : null}
-
-        <section
-          className={`min-w-0 flex-1 ${sidebarOpen ? "lg:pl-[288px]" : "lg:pl-[88px]"}`}
-        >
-          <div className="min-w-0 px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
-            <header className="ui-rise-in sticky top-3 z-10 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-black/8 bg-[rgba(252,252,250,0.92)] px-3 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.06)] backdrop-blur sm:top-4 sm:px-4">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:text-slate-950 lg:hidden"
-                  onClick={() => setSidebarOpen(true)}
-                  aria-label="Open sidebar"
-                >
-                  <span className="material-symbols-outlined text-[20px]">menu</span>
-                </button>
-                <div className="flex items-center gap-3">
-                  <IvoryLogo className="h-10 w-10 shrink-0" />
-                  <div>
-                  <p className="font-[family-name:var(--font-display)] text-lg font-bold text-slate-950">
-                    Ivory
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    Chat-first quote workspace
-                  </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="-mx-1 flex w-[calc(100%+0.5rem)] gap-2 overflow-x-auto px-1 pb-1 text-xs text-slate-500 sm:mx-0 sm:w-auto sm:flex-wrap sm:justify-end sm:overflow-visible sm:px-0 sm:pb-0">
-                <button
-                  type="button"
-                  className="ui-hover-lift hidden rounded-full border border-slate-200 bg-white px-3 py-1.5 transition hover:border-slate-300 hover:text-slate-900 lg:inline-flex"
-                  onClick={() => setSidebarOpen((current) => !current)}
-                >
-                  {sidebarOpen ? "Collapse panel" : "Expand panel"}
-                </button>
-                <StatePill
-                  label="Mode"
-                  value={
-                    chat.sessionSnapshot?.mode === "transactional"
-                      ? "Quote Flow"
-                      : "Knowledge Mode"
-                  }
-                />
-                <StatePill
-                  label="Step"
-                  value={formatLabel(chat.sessionSnapshot?.quote_step, "General questions")}
-                />
-              </div>
-            </header>
-
-            <ChatWindow
-              messages={chat.messages}
-              draft={draft}
-              error={chat.error}
-              isSending={chat.isSending}
-              isResetting={chat.isResetting}
-              sessionLabel={chat.sessionLabel}
-              quoteResult={chat.quoteResult}
-              statusText={chat.statusText}
-              onDraftChange={setDraft}
-              onSend={submitDraft}
-              onReset={chat.resetSession}
-              onNewSession={chat.createNewSession}
-              onStop={chat.stopGeneration}
-              onQuickPrompt={(prompt) => {
-                setDraft(prompt);
-              }}
+        {progress !== null ? (
+          <div
+            className="h-[3px] w-full bg-soft"
+            role="progressbar"
+            aria-valuenow={Math.round(progress * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Quote progress"
+          >
+            <div
+              className="h-full rounded-r-full bg-teal transition-all duration-300"
+              style={{ width: `${progress * 100}%` }}
             />
           </div>
-        </section>
+        ) : null}
+
+        <ChatWindow
+          messages={chat.messages}
+          draft={draft}
+          error={chat.error}
+          isSending={chat.isSending}
+          isResetting={chat.isResetting}
+          hasQuoteResult={Boolean(chat.sessionSnapshot?.has_quote_result)}
+          onDraftChange={setDraft}
+          onSend={submitDraft}
+          onStop={chat.stopGeneration}
+          onQuickPrompt={(prompt) => void chat.sendMessage(prompt)}
+        />
       </div>
     </main>
   );
