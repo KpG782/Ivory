@@ -1,35 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink-950: #111111;
-  --color-ink-900: #1b1b1b;
-  --color-ink-800: #2c2c2c;
-  --color-sand-50: #fafaf8;
-  --color-sand-100: #f0efe9;
-  --color-sand-200: #e4e2d7;
-  --color-gold-300: #e6d2a7;
-  --color-gold-400: #d4bb84;
-  --color-gold-500: #a9853c;
-  --color-cyan-300: #b8d8d3;
-  --color-cyan-400: #88bcb4;
-  --color-cyan-500: #3f7e74;
-  --color-rose-300: #efb7ae;
-  --color-success-300: #95cbab;
+  --color-ivory: #FAFAF9;
+  --color-ink: #1C1917;
+  --color-muted: #57534E;
+  --color-teal: #0F766E;
+  --color-teal-hover: #115E59;
+  --color-teal-tint: #CCFBF1;
+  --color-line: #E7E5E4;
+  --color-soft: #F5F5F4;
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
-  --shadow-panel: 0 20px 60px rgba(17, 24, 39, 0.08);
+  --shadow-panel: 0 20px 60px rgba(28, 25, 23, 0.08);
 }
 
 :root {
   color-scheme: light;
-  --page-background:
-    radial-gradient(circle at top left, rgba(212, 187, 132, 0.18), transparent 24%),
-    radial-gradient(circle at top right, rgba(136, 188, 180, 0.14), transparent 26%),
-    linear-gradient(180deg, #fcfcfa 0%, #f6f5f0 52%, #f1efe8 100%);
-  --card-background: rgba(255, 255, 255, 0.7);
-  --card-strong: rgba(255, 255, 255, 0.9);
-  --line-soft: rgba(17, 24, 39, 0.08);
-  --line-strong: rgba(17, 24, 39, 0.14);
+  --page-background: #FAFAF9;
+  --card-background: #FFFFFF;
+  --card-strong: #FFFFFF;
+  --line-soft: #E7E5E4;
+  --line-strong: #D6D3D1;
 }
 
 * {
@@ -54,17 +45,6 @@ body {
   font-family: var(--font-body), sans-serif;
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 12% 10%, rgba(212, 187, 132, 0.14), transparent 24%),
-    radial-gradient(circle at 88% 18%, rgba(136, 188, 180, 0.1), transparent 22%);
-  opacity: 0.9;
-}
-
 button,
 textarea,
 input {
@@ -84,13 +64,13 @@ a:focus-visible,
 button:focus-visible,
 [role="button"]:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--color-gold-500);
+  outline: 2px solid var(--color-teal);
   outline-offset: 2px;
   border-radius: 9999px;
 }
 
 ::selection {
-  background: rgba(212, 187, 132, 0.4);
+  background: rgba(204, 251, 241, 0.9);
 }
 
 .material-symbols-outlined {

@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Manrope, Space_Grotesk } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
-const bodyFont = Manrope({
+const bodyFont = Inter({
   subsets: ["latin"],
   variable: "--font-body",
   display: "swap"
 });
 
-const displayFont = Space_Grotesk({
+const displayFont = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap"
