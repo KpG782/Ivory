@@ -1,7 +1,7 @@
 services:
-  shieldbase-backend:
-    image: kpg782/shieldbase-backend:latest
-    container_name: shieldbase-backend
+  ivory-backend:
+    image: kpg782/ivory-backend:latest
+    container_name: ivory-backend
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -14,7 +14,7 @@ services:
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-meta-llama/llama-3.1-8b-instruct}
       HF_TOKEN: ${HF_TOKEN:-}
     volumes:
-      - shieldbase_backend_data:/data
+      - ivory_backend_data:/data
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
       interval: 30s
@@ -23,4 +23,4 @@ services:
       start_period: 45s
 
 volumes:
-  shieldbase_backend_data:
+  ivory_backend_data:

@@ -2,7 +2,7 @@
 
 ## What was added
 
-The ShieldBase knowledge base now includes additional high-value documents for:
+The Ivory knowledge base now includes additional high-value documents for:
 
 - auto coverage levels and deductibles
 - home exclusions, limits, and add-ons
@@ -33,7 +33,7 @@ When the app needs retrieval, it chunks those markdown files, embeds them, and s
 
 The retrieval system is implemented in:
 
-- [vectorstore.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/services/vectorstore.py)
+- [vectorstore.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/services/vectorstore.py)
 
 ## Important setup note
 

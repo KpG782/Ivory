@@ -8,9 +8,9 @@ from services.llm import OpenRouterClient, OpenRouterError
 from services.vectorstore import RetrievedChunk, search_knowledge_base
 from streaming_context import get_on_token
 
-logger = logging.getLogger("shieldbase.rag")
+logger = logging.getLogger("ivory.rag")
 
-RAG_SYSTEM_PROMPT = """You are the ShieldBase insurance assistant.
+RAG_SYSTEM_PROMPT = """You are the Ivory insurance assistant.
 Answer only using the provided knowledge base context.
 If the context is insufficient, say so plainly and do not invent policy details.
 Keep the answer concise, accurate, and friendly.
@@ -261,7 +261,7 @@ def _direct_fallback_answer(query: str, retrieved: Sequence[RetrievedChunk]) -> 
 
     if "what insurance products" in query or "types of insurance" in query or "what do you offer" in query:
         if all(term in combined for term in ("auto", "home", "life")):
-            return "ShieldBase offers auto insurance, home insurance, and life insurance."
+            return "Ivory offers auto insurance, home insurance, and life insurance."
 
     if "deductible" in query:
         return (

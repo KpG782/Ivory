@@ -1,4 +1,4 @@
-# ShieldBase E2E Testing Guide
+# Ivory E2E Testing Guide
 
 ## Current Status
 

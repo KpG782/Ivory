@@ -1,6 +1,6 @@
 # Home Coverage Limits, Exclusions, And Optional Add-Ons
 
-ShieldBase home insurance in this demo focuses on core property protection, but users often need clarification on limits and exclusions.
+Ivory home insurance in this demo focuses on core property protection, but users often need clarification on limits and exclusions.
 
 ## Core home coverage areas
 

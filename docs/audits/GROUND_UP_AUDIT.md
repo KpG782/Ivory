@@ -1,4 +1,4 @@
-# ShieldBase — Ground-Up Architecture Audit
+# Ivory — Ground-Up Architecture Audit
 
 **Date:** 2026-06-09
 **Scope:** End-to-end — LangGraph orchestration, state/persistence, intent routing, RAG, the quote flow, the cross-mode "context switching," and the Next.js frontend.
@@ -10,7 +10,7 @@
 
 ## Executive summary
 
-ShieldBase is supposed to be **one conversation** that fluidly switches between answering insurance questions (RAG) and running a step-by-step quote, and can **resume a quote exactly where it left off** after an interruption.
+Ivory is supposed to be **one conversation** that fluidly switches between answering insurance questions (RAG) and running a step-by-step quote, and can **resume a quote exactly where it left off** after an interruption.
 
 The audit's core finding: **that behavior is simulated, not real.** Four structural decisions, each individually reasonable, combine to make the promise fragile:
 

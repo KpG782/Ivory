@@ -1,8 +1,8 @@
-# ShieldBase Insurance Assistant — Architecture & Engineering Review
+# Ivory Insurance Assistant — Architecture & Engineering Review
 
 ## 1. Executive Summary
 
-ShieldBase is a hybrid insurance chatbot that answers grounded knowledge-base questions (RAG) and runs a structured, multi-step quote workflow (transactional), switching between the two modes in the same session without losing state. Built as a take-home technical assessment demonstrating LLM orchestration, deterministic business logic, streaming API design, and production-grade hardening.
+Ivory is a hybrid insurance chatbot that answers grounded knowledge-base questions (RAG) and runs a structured, multi-step quote workflow (transactional), switching between the two modes in the same session without losing state. Built as a take-home technical assessment demonstrating LLM orchestration, deterministic business logic, streaming API design, and production-grade hardening.
 
 **Core tech stack:** Python FastAPI + LangGraph · OpenRouter (Llama 3.1 8B) · ChromaDB + sentence-transformers · Next.js App Router + React + Tailwind CSS
 
@@ -156,7 +156,7 @@ SSE stream to browser:
 ### Decision: Server-side auth with httpOnly cookie
 
 - **What:** Credentials (`AUTH_USERNAME` / `AUTH_PASSWORD`) live in server-side env vars. The Next.js `/api/auth/login` route validates them and sets an `httpOnly; SameSite=Lax` session cookie. The session token is an HMAC-SHA256 of the credentials — stateless, no token store required.
-- **Why:** The previous design stored `NEXT_PUBLIC_SHIELDBASE_LOGIN_PASS` — meaning the password was bundled into client-side JavaScript. That's a critical security gap. Moving validation server-side and using `httpOnly` cookies means the password never reaches the browser.
+- **Why:** The previous design stored `NEXT_PUBLIC_IVORY_LOGIN_PASS` — meaning the password was bundled into client-side JavaScript. That's a critical security gap. Moving validation server-side and using `httpOnly` cookies means the password never reaches the browser.
 - **Trade-off:** Requires the Next.js server to handle auth, not just act as a static host.
 - **Alternative considered:** JWT with a database of sessions. Correct for multi-user production; stateless HMAC token is sufficient for single-user demo auth.
 
@@ -319,10 +319,10 @@ Structured logging via Python `logging` module at DEBUG/INFO/ERROR. `/health` en
 ## 10. Demo Walkthrough Script
 
 ### Step 1 — Set the stage (30 seconds)
-"ShieldBase is an insurance assistant that handles two modes: answering knowledge-base questions using RAG, and running a guided quote workflow. The key design challenge is that you can interrupt a quote, ask a side question, and the bot brings you back to exactly where you were. The backend is the source of truth for all state — the frontend just renders what it receives."
+"Ivory is an insurance assistant that handles two modes: answering knowledge-base questions using RAG, and running a guided quote workflow. The key design challenge is that you can interrupt a quote, ask a side question, and the bot brings you back to exactly where you were. The backend is the source of truth for all state — the frontend just renders what it receives."
 
 ### Step 2 — Login (15 seconds)
-Navigate to `http://localhost:3000`. Use username `admin`, password `shieldbase123`.
+Navigate to `http://localhost:3000`. Use username `admin`, password `ivory123`.
 **Point out:** "Auth is now server-side — credentials live in server env vars, never in client JS. The session is managed via an httpOnly cookie."
 
 ### Step 3 — Knowledge Mode (60 seconds)

@@ -9,11 +9,11 @@ import type {
 } from "../types";
 import { parseSseData, parseSseStream } from "../lib/sse";
 
-const STORAGE_KEY = "shieldbase-session-id";
-const SNAPSHOT_STORAGE_KEY = "shieldbase-session-snapshot";
-const QUOTE_STORAGE_KEY = "shieldbase-latest-quote";
-const MESSAGES_STORAGE_KEY = "shieldbase-current-messages";
-const HISTORY_STORAGE_KEY = "shieldbase-chat-history";
+const STORAGE_KEY = "ivory-session-id";
+const SNAPSHOT_STORAGE_KEY = "ivory-session-snapshot";
+const QUOTE_STORAGE_KEY = "ivory-latest-quote";
+const MESSAGES_STORAGE_KEY = "ivory-current-messages";
+const HISTORY_STORAGE_KEY = "ivory-chat-history";
 const CHAT_ENDPOINT = "/api/chat";
 const RESET_ENDPOINT = "/api/reset";
 const INITIAL_SESSION_ID = "session-pending";

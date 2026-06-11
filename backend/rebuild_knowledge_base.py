@@ -5,7 +5,7 @@ from services.vectorstore import ingest_knowledge_base
 
 def main() -> None:
     report = ingest_knowledge_base()
-    print("ShieldBase knowledge base rebuilt")
+    print("Ivory knowledge base rebuilt")
     print(f"Documents: {report.document_count}")
     print(f"Chunks: {report.chunk_count}")
     print(f"Backend: {report.backend}")

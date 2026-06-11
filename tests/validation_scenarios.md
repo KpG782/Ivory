@@ -1,8 +1,8 @@
-# ShieldBase Validation Scenarios
+# Ivory Validation Scenarios
 
 ## Purpose
 
-This document captures the expected validation coverage for the ShieldBase Insurance Assistant while the implementation is being built.
+This document captures the expected validation coverage for the Ivory Insurance Assistant while the implementation is being built.
 
 ## Scenario Matrix
 

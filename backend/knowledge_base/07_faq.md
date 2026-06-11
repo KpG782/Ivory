@@ -1,8 +1,8 @@
 # Frequently Asked Questions
 
-## What types of insurance does ShieldBase offer?
+## What types of insurance does Ivory offer?
 
-ShieldBase offers auto, home, and life insurance support.
+Ivory offers auto, home, and life insurance support.
 
 ## Can I ask a question while I am getting a quote?
 

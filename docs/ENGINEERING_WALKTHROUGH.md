@@ -1,4 +1,4 @@
-# ShieldBase — How the LangGraph / LangChain Setup Was Built & Orchestrated
+# Ivory — How the LangGraph / LangChain Setup Was Built & Orchestrated
 
 **Audience:** a software / AI engineer who wants to understand *how this was put together*, step by step — but every step is also explained 🧸 **like you're five** so you can re-explain it in your own words.
 

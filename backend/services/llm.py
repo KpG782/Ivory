@@ -18,7 +18,7 @@ DEFAULT_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 DEFAULT_TIMEOUT_SECONDS = float(os.getenv("OPENROUTER_TIMEOUT_SECONDS", "60"))
 DEFAULT_MAX_RETRIES = int(os.getenv("OPENROUTER_MAX_RETRIES", "2"))
 DEFAULT_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "http://localhost")
-DEFAULT_TITLE = os.getenv("OPENROUTER_APP_TITLE", "ShieldBase Insurance Assistant")
+DEFAULT_TITLE = os.getenv("OPENROUTER_APP_TITLE", "Ivory Insurance Assistant")
 
 
 class OpenRouterError(RuntimeError):

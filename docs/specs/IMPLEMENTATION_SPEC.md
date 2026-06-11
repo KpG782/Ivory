@@ -1,8 +1,8 @@
-# ShieldBase Implementation Spec
+# Ivory Implementation Spec
 
 ## Summary
 
-This document is the execution-ready build spec for the ShieldBase Insurance Assistant. It complements the existing root docs and remains a reference for how the current implementation is expected to behave.
+This document is the execution-ready build spec for the Ivory Insurance Assistant. It complements the existing root docs and remains a reference for how the current implementation is expected to behave.
 
 ## Project Status
 

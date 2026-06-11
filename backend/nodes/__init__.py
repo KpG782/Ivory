@@ -1,1 +1,1 @@
-"""LangGraph-style nodes for ShieldBase."""
+"""LangGraph-style nodes for Ivory."""

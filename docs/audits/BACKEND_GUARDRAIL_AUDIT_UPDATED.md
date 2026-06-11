@@ -89,7 +89,7 @@ the flow continues cleanly and generates the quote.
 
 Primary changes were made in:
 
-- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
+- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
 
 Key updates:
 

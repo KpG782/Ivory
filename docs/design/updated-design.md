@@ -3,7 +3,7 @@
 <html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Architectural Guardian | ShieldBase Insurance</title>
+<title>Architectural Guardian | Ivory Insurance</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -293,7 +293,7 @@
 </div>
 </div>
 <p class="mt-3 text-center text-[10px] text-outline font-medium">
-                    AI Guardian provides guidance. Specific policy terms are governed by your official ShieldBase contract.
+                    AI Guardian provides guidance. Specific policy terms are governed by your official Ivory contract.
                 </p>
 </div>
 </div>

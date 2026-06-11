@@ -1,6 +1,6 @@
 # Prompt Pack Overview
 
-This folder contains the prompt pack for setting up a main ChatGPT orchestrator and four implementation subagents for the ShieldBase project.
+This folder contains the prompt pack for setting up a main ChatGPT orchestrator and four implementation subagents for the Ivory project.
 
 ## Source Of Truth
 

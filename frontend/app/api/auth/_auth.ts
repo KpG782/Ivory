@@ -11,8 +11,8 @@
 
 import crypto from "node:crypto";
 
-const SESSION_COOKIE_NAME = "shieldbase_session";
-const DEFAULT_SECRET = "shieldbase-dev-secret-change-in-production";
+const SESSION_COOKIE_NAME = "ivory_session";
+const DEFAULT_SECRET = "ivory-dev-secret-change-in-production";
 
 function authConfig(): {
   username: string;

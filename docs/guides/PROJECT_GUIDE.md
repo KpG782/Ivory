@@ -1,8 +1,8 @@
-# ShieldBase Project Guide
+# Ivory Project Guide
 
 ## Purpose
 
-This guide explains what the ShieldBase chatbot project is, how it works now, and which technology choices shape the current implementation.
+This guide explains what the Ivory chatbot project is, how it works now, and which technology choices shape the current implementation.
 
 It is meant to help a junior engineer quickly understand the project without reading every root-level markdown file first.
 
@@ -20,7 +20,7 @@ Present now:
 
 ## Product Goal
 
-The intended product is an AI insurance assistant for ShieldBase.
+The intended product is an AI insurance assistant for Ivory.
 
 It has two responsibilities:
 - answer questions about insurance products

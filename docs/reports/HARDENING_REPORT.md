@@ -1,4 +1,4 @@
-# ShieldBase Hardening Report
+# Ivory Hardening Report
 
 ## Scope
 
@@ -32,13 +32,13 @@ The backend flow was tightened in these areas:
 
 Relevant files:
 
-- [graph.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/graph.py)
-- [router.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/router.py)
-- [confirm.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/confirm.py)
-- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
-- [identify_product.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/identify_product.py)
-- [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/services/quote_calculator.py)
-- [main.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/main.py)
+- [graph.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/graph.py)
+- [router.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/router.py)
+- [confirm.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/confirm.py)
+- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
+- [identify_product.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/identify_product.py)
+- [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/services/quote_calculator.py)
+- [main.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/main.py)
 
 ### 2. Retrieval hardening
 
@@ -48,7 +48,7 @@ This was done by adding reranking on top of base vector retrieval.
 
 Relevant file:
 
-- [vectorstore.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/services/vectorstore.py)
+- [vectorstore.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/services/vectorstore.py)
 
 ### 3. Knowledge base expansion
 
@@ -62,7 +62,7 @@ The knowledge base was expanded with more useful policy content, including:
 
 Relevant folder:
 
-- [knowledge_base](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/knowledge_base)
+- [knowledge_base](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/knowledge_base)
 
 ### 4. Test coverage expansion
 
@@ -86,7 +86,7 @@ It now covers:
 
 Relevant file:
 
-- [test_backend_integration.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/tests/test_backend_integration.py)
+- [test_backend_integration.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/tests/test_backend_integration.py)
 
 ## Verification results
 
@@ -160,7 +160,7 @@ If those are blocked, the app still works, but answers may fall back more often.
 
 ## Practical conclusion
 
-This hardening pass did not try to turn ShieldBase into a production insurance platform.
+This hardening pass did not try to turn Ivory into a production insurance platform.
 
 It did make the current assessment setup much more reliable.
 

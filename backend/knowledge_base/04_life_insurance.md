@@ -1,6 +1,6 @@
 # Life Insurance
 
-ShieldBase life insurance is designed as a simple term-style quote flow that helps customers estimate coverage for beneficiaries.
+Ivory life insurance is designed as a simple term-style quote flow that helps customers estimate coverage for beneficiaries.
 
 ## What it can cover
 

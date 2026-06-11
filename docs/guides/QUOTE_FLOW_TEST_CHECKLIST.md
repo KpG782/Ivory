@@ -1,6 +1,6 @@
 # Quote Flow Test Checklist
 
-Use this checklist to verify the current ShieldBase flow in the browser against the exact issues that were failing before.
+Use this checklist to verify the current Ivory flow in the browser against the exact issues that were failing before.
 
 ## Goal
 

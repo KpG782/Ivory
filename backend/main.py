@@ -27,7 +27,7 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger("shieldbase.main")
+logger = logging.getLogger("ivory.main")
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 # Restrict to known origins. Set ALLOWED_ORIGINS env var for production.
@@ -113,7 +113,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="ShieldBase Insurance Assistant", lifespan=lifespan)
+app = FastAPI(title="Ivory Insurance Assistant", lifespan=lifespan)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

@@ -1,13 +1,13 @@
-# ShieldBase — Plain English Explanation
+# Ivory — Plain English Explanation
 
 This is a simplified version of the three technical docs (ARCHITECTURE.md, QA_PREP.md, DEMO_CHECKLIST.md).
 No jargon. Read this first if you want the big picture before diving into the technical docs.
 
 ---
 
-## What is ShieldBase?
+## What is Ivory?
 
-ShieldBase is a **chatbot for an insurance company**. It does two things:
+Ivory is a **chatbot for an insurance company**. It does two things:
 
 1. **Answers questions** — "What does comprehensive coverage include?" → it looks it up and gives you a grounded answer.
 2. **Gets you a quote** — "I want auto insurance" → it asks you step-by-step questions (car year, make, age, etc.) and spits out a price.
@@ -128,7 +128,7 @@ The browser gets words as they arrive. No waiting for the full response.
 ## How Login / Auth Works
 
 1. You go to `localhost:3000` — if you're not logged in, you see a login screen
-2. You type `admin` / `shieldbase123` and click Login (use the eye icon to show the password)
+2. You type `admin` / `ivory123` and click Login (use the eye icon to show the password)
 3. The Next.js server checks your credentials against its private environment variables
 4. If correct, it sets a **secure cookie** on your browser (invisible, tamper-proof, expires in 24 hours)
 5. Every page load checks that cookie — if it's valid, you're in; if not, back to login
@@ -167,7 +167,7 @@ The password is only ever checked server-side. It never appears in browser code.
 - Wait for it to say the knowledge base is ready
 - Check `localhost:8000/debug` — both `knowledge_base: ok` and `llm: ok` should be green
 - Start the frontend (`npm run dev` in the frontend folder)
-- Open `localhost:3000`, log in with `admin` / `shieldbase123`
+- Open `localhost:3000`, log in with `admin` / `ivory123`
 - Do a quick end-to-end test: ask a knowledge question, start a quote, interrupt with a question, complete the quote
 
 ### During the Demo

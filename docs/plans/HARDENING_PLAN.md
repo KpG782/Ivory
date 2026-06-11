@@ -1,8 +1,8 @@
-# ShieldBase Hardening Plan
+# Ivory Hardening Plan
 
 ## Purpose
 
-This plan turns the current audit into a practical hardening roadmap for the ShieldBase application.
+This plan turns the current audit into a practical hardening roadmap for the Ivory application.
 
 The goal is not to redesign the whole system.
 
@@ -51,12 +51,12 @@ Make sure quote flow progression is deterministic and does not drift under inter
 ### Tasks
 
 - review all state transitions in:
-  - [graph.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/graph.py)
-  - [router.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/router.py)
-  - [identify_product.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/identify_product.py)
-  - [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
-  - [validate_quote.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/validate_quote.py)
-  - [confirm.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/confirm.py)
+  - [graph.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/graph.py)
+  - [router.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/router.py)
+  - [identify_product.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/identify_product.py)
+  - [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
+  - [validate_quote.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/validate_quote.py)
+  - [confirm.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/confirm.py)
 - define and enforce simple invariants:
   - transactional mode should preserve `collected_data` unless reset or restart
   - invalid input should not advance `quote_step`
@@ -96,8 +96,8 @@ Reduce bad data entering quote state.
   - rejecting clearly off-topic answers during collection
   - normalizing common formatting issues
 - verify validation in:
-  - [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
-  - [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/services/quote_calculator.py)
+  - [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
+  - [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/services/quote_calculator.py)
 
 ### Success criteria
 
@@ -114,7 +114,7 @@ Prove behavior across all major paths, not just the happy-path auto flow.
 
 ### Tasks
 
-- expand [test_backend_integration.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/tests/test_backend_integration.py) to cover:
+- expand [test_backend_integration.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/tests/test_backend_integration.py) to cover:
   - home quote flow
   - life quote flow
   - invalid field handling per product
@@ -152,7 +152,7 @@ Make RAG answers more consistently relevant and less dependent on luck in rankin
 ### Tasks
 
 - keep refining retrieval in:
-  - [vectorstore.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/services/vectorstore.py)
+  - [vectorstore.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/services/vectorstore.py)
 - test common user questions such as:
   - product overview
   - coverage differences
@@ -162,7 +162,7 @@ Make RAG answers more consistently relevant and less dependent on luck in rankin
   - life beneficiary questions
 - continue improving the knowledge base with focused docs, not bulk filler
 - keep the rebuild path documented in:
-  - [KNOWLEDGE_BASE_SETUP.md](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/docs/guides/KNOWLEDGE_BASE_SETUP.md)
+  - [KNOWLEDGE_BASE_SETUP.md](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/docs/guides/KNOWLEDGE_BASE_SETUP.md)
 
 ### Success criteria
 
@@ -179,7 +179,7 @@ Ensure the UI reflects backend truth under resets, refreshes, interruptions, and
 ### Tasks
 
 - verify state handling in:
-  - [useChat.ts](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/frontend/src/hooks/useChat.ts)
+  - [useChat.ts](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/frontend/src/hooks/useChat.ts)
 - test:
   - reset while streaming
   - stop generation while streaming
@@ -204,9 +204,9 @@ Make local setup repeatable and demo-friendly.
 
 - keep `.env` loading stable for backend
 - document expected startup flow in:
-  - [LOCAL_RUN_INSTRUCTIONS.md](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/docs/guides/LOCAL_RUN_INSTRUCTIONS.md)
+  - [LOCAL_RUN_INSTRUCTIONS.md](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/docs/guides/LOCAL_RUN_INSTRUCTIONS.md)
 - keep KB rebuild documented in:
-  - [KNOWLEDGE_BASE_SETUP.md](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/docs/guides/KNOWLEDGE_BASE_SETUP.md)
+  - [KNOWLEDGE_BASE_SETUP.md](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/docs/guides/KNOWLEDGE_BASE_SETUP.md)
 - decide whether to add:
   - `HF_TOKEN` guidance for embedding downloads
   - a startup warmup step

@@ -37,15 +37,14 @@ chat state and intake state.
 
 ## Project Status
 
-This codebase started as **ShieldBase**, an insurance-assistant take-home, and is
-being rebranded into Ivory for the dental vertical. Same architecture, new skin
-and corpus.
+This codebase started as an insurance-assistant take-home and is being rebranded
+into Ivory for the dental vertical. Same architecture, new skin and corpus.
 
 | Piece | Status |
 |-------|--------|
 | Deterministic state machine, RAG, slot-filling, durable memory | ✅ Built and tested (41 green) |
 | Brand + design system | ✅ `docs/branding/IVORY_BRAND.md`, `design-system/ivory/MASTER.md` |
-| Current running vertical | Insurance quotes (`auto`, `home`, `life`) — the ShieldBase heritage |
+| Current running vertical | Insurance quotes (`auto`, `home`, `life`) — the original take-home vertical |
 | Dental vertical (NIDCR/CDC corpus, Cal.com booking, Airtable CRM, Resend email) | 🔜 In progress — research locked in `docs/DATASET_RESEARCH_DENTAL.md` |
 
 ## Chat Modes

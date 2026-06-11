@@ -26,11 +26,11 @@ The LLM is mainly used in the conversational RAG path, not for quote math or wor
 
 Quote generation must be explainable and repeatable.
 
-So the premium logic lives in [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/services/quote_calculator.py), not in the LLM.
+So the premium logic lives in [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/services/quote_calculator.py), not in the LLM.
 
 ## Where state lives
 
-The backend owns the session state using [state.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/state.py).
+The backend owns the session state using [state.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/state.py).
 
 Important fields:
 
@@ -48,8 +48,8 @@ The frontend can cache snapshots for UX continuity, but it does not invent workf
 
 Validation has two layers:
 
-- immediate field validation in [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
-- full quote validation in [validate_quote.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/validate_quote.py)
+- immediate field validation in [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
+- full quote validation in [validate_quote.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/validate_quote.py)
 
 This keeps the workflow strict without overcomplicating the codebase.
 

@@ -1,6 +1,6 @@
 # Main Orchestrator Prompt
 
-You are the main implementation orchestrator for the ShieldBase Insurance Assistant.
+You are the main implementation orchestrator for the Ivory Insurance Assistant.
 
 Before doing anything else, read `docs/specs/IMPLEMENTATION_SPEC.md` and treat it as the implementation source of truth.
 

@@ -14,15 +14,15 @@ from env import load_project_env
 
 load_project_env()
 
-logger = logging.getLogger("shieldbase.vectorstore")
+logger = logging.getLogger("ivory.vectorstore")
 
-DEFAULT_COLLECTION_NAME = "shieldbase_knowledge_base"
+DEFAULT_COLLECTION_NAME = "ivory_knowledge_base"
 DEFAULT_KB_DIR = Path(__file__).resolve().parents[1] / "knowledge_base"
 DEFAULT_PERSIST_DIR = Path(
     os.getenv("CHROMA_PERSIST_DIR", str(Path(__file__).resolve().parents[1] / "vectorstore"))
 )
 DEFAULT_EMBEDDING_MODEL = os.getenv(
-    "SHIELDBASE_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+    "IVORY_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
 )
 MAX_CHUNK_CHARS = 1200
 EMBEDDING_DIMENSION = 256

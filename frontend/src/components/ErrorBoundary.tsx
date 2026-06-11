@@ -1,7 +1,7 @@
 "use client";
 
 import { Component, type ReactNode } from "react";
-import { ShieldBaseLogo } from "./ShieldBaseLogo";
+import { IvoryLogo } from "./IvoryLogo";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: unknown): void {
     // Surface to the console for debugging; never crash the whole tree.
-    console.error("ShieldBase UI error:", error);
+    console.error("Ivory UI error:", error);
   }
 
   private handleReload = (): void => {
@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           className="w-full max-w-md rounded-[2rem] border border-black/8 bg-white/85 p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur"
         >
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[#d9c69b] bg-[#f8f3e6] p-2.5">
-            <ShieldBaseLogo className="h-full w-full" />
+            <IvoryLogo className="h-full w-full" />
           </div>
           <h1 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold tracking-[-0.03em] text-slate-950">
             Something went wrong

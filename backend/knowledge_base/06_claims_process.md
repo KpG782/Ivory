@@ -1,6 +1,6 @@
 # Claims Process
 
-This document explains the general claims process for ShieldBase customers.
+This document explains the general claims process for Ivory customers.
 
 ## General flow
 

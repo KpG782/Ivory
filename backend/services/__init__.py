@@ -1,1 +1,1 @@
-"""Backend services for ShieldBase."""
+"""Backend services for Ivory."""

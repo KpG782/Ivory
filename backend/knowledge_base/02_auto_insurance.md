@@ -1,6 +1,6 @@
 # Auto Insurance
 
-ShieldBase auto insurance is designed to help customers understand vehicle coverage and obtain a quote quickly.
+Ivory auto insurance is designed to help customers understand vehicle coverage and obtain a quote quickly.
 
 ## What it can cover
 

@@ -10,7 +10,7 @@
  * username field.  The password is intentionally not exposed.
  */
 
-export const AUTH_COOKIE_NAME = "shieldbase_session";
+export const AUTH_COOKIE_NAME = "ivory_session";
 
 /** Optional username hint shown on the login screen for demo environments. */
 export function getDemoUsernameHint(): string {

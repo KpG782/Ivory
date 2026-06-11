@@ -72,7 +72,7 @@ Used by:
 
 Uses direct question headings:
 
-- `## What types of insurance does ShieldBase offer?`
+- `## What types of insurance does Ivory offer?`
 - `## Can I ask a question while I am getting a quote?`
 
 Used by:
@@ -93,7 +93,7 @@ Used by:
 
 ### Purpose
 
-Top-level definition of what ShieldBase is and how the assistant should behave.
+Top-level definition of what Ivory is and how the assistant should behave.
 
 ### Main sections
 

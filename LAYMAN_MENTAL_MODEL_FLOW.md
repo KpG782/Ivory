@@ -1,10 +1,10 @@
 # Layman Mental Model Flow
 
-This document is a plain-English explanation of how ShieldBase works, so you can explain it clearly in a demo, interview, or walkthrough without sounding too technical.
+This document is a plain-English explanation of how Ivory works, so you can explain it clearly in a demo, interview, or walkthrough without sounding too technical.
 
 ## The One-Sentence Explanation
 
-ShieldBase is an insurance chatbot that can do two things in one conversation:
+Ivory is an insurance chatbot that can do two things in one conversation:
 
 - answer insurance questions
 - guide a user through getting a quote step by step
@@ -13,7 +13,7 @@ The important part is that it can switch between those two without losing track 
 
 ## The Simplest Mental Model
 
-Think of ShieldBase like a smart front-desk assistant at an insurance office.
+Think of Ivory like a smart front-desk assistant at an insurance office.
 
 It can do two jobs:
 
@@ -67,7 +67,7 @@ Example:
 
 Use this if someone is not technical:
 
-ShieldBase works like a receptionist with a checklist.
+Ivory works like a receptionist with a checklist.
 
 - If you ask a general question, it gives you an answer.
 - If you ask for a quote, it pulls out the right checklist.
@@ -93,7 +93,7 @@ Here is the easiest way to explain a real conversation flow:
 
 A basic chatbot can answer questions, but it often loses track of structured tasks.
 
-ShieldBase is stronger because:
+Ivory is stronger because:
 
 - it remembers the quote step
 - it validates user input
@@ -189,13 +189,13 @@ That is the main design decision.
 
 If you only have 20 to 30 seconds, say this:
 
-ShieldBase is a hybrid insurance assistant. It can answer product questions from a knowledge base, and it can also run a structured quote workflow for auto, home, and life insurance. The backend keeps the quote state, so if a user interrupts the flow with a question, the assistant answers it and then resumes from the exact next missing field. The quote itself is deterministic and calculated in code, not invented by the LLM.
+Ivory is a hybrid insurance assistant. It can answer product questions from a knowledge base, and it can also run a structured quote workflow for auto, home, and life insurance. The backend keeps the quote state, so if a user interrupts the flow with a question, the assistant answers it and then resumes from the exact next missing field. The quote itself is deterministic and calculated in code, not invented by the LLM.
 
 ## Slightly Longer Demo Answer
 
 If you have around one minute, say this:
 
-The easiest way to think about ShieldBase is as two systems in one chat. One part handles insurance questions using a markdown-based knowledge base. The other part handles quote collection like a guided checklist. The backend decides which path to use for each message. If the user starts a quote, the system collects the required fields step by step and validates each one. If the user interrupts with a policy question, the assistant answers it but keeps the quote state intact, then resumes the exact next step. Once all the data is collected, the final premium is calculated with deterministic rules in code. So the app feels conversational, but the transaction part remains stable and predictable.
+The easiest way to think about Ivory is as two systems in one chat. One part handles insurance questions using a markdown-based knowledge base. The other part handles quote collection like a guided checklist. The backend decides which path to use for each message. If the user starts a quote, the system collects the required fields step by step and validates each one. If the user interrupts with a policy question, the assistant answers it but keeps the quote state intact, then resumes the exact next step. Once all the data is collected, the final premium is calculated with deterministic rules in code. So the app feels conversational, but the transaction part remains stable and predictable.
 
 ## Best Phrases To Reuse
 
@@ -255,7 +255,7 @@ It presents the conversation, current quote state, and results. It is the interf
 
 If you forget everything else, remember this:
 
-ShieldBase is a chatbot with a checklist brain.
+Ivory is a chatbot with a checklist brain.
 
 - handbook for questions
 - checklist for quotes

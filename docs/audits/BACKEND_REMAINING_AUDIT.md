@@ -181,14 +181,14 @@ The current problem is **validation strictness and response polish**.
 
 Root cause:
 
-- `_clean_text_value()` in [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py) blocks explicit policy-question phrases, but still allows generic nonsense text like `i like dogs`
+- `_clean_text_value()` in [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py) blocks explicit policy-question phrases, but still allows generic nonsense text like `i like dogs`
 
 ### Property value bug
 
 Root cause:
 
 - `float` coercion accepts `0`
-- reasonableness is deferred to final validation in [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/services/quote_calculator.py)
+- reasonableness is deferred to final validation in [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/services/quote_calculator.py)
 - this means the workflow advances before rejecting it
 
 ### RAG instability

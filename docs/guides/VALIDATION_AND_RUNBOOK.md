@@ -1,8 +1,8 @@
-# ShieldBase Validation And Runbook
+# Ivory Validation And Runbook
 
 ## Purpose
 
-This runbook explains how to validate the ShieldBase implementation against the current specification and how to keep the local environment clean while the project is still being built.
+This runbook explains how to validate the Ivory implementation against the current specification and how to keep the local environment clean while the project is still being built.
 
 It is written for a take-home style implementation workflow where the repo may still be incomplete in some areas.
 

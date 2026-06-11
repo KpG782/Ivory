@@ -1,8 +1,8 @@
-# ShieldBase Purpose And Flow
+# Ivory Purpose And Flow
 
 ## What this project is
 
-ShieldBase is a hybrid insurance assistant.
+Ivory is a hybrid insurance assistant.
 
 It is not just a chatbot and it is not just a quote form.
 
@@ -12,7 +12,7 @@ Its purpose is to combine:
 - structured quote collection
 - clean switching between those two modes
 
-That is the main point of the project from [MASTER.md](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/docs/specs/MASTER.md): prove that one assistant can answer product questions and also run a guided transactional workflow without losing state.
+That is the main point of the project from [MASTER.md](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/docs/specs/MASTER.md): prove that one assistant can answer product questions and also run a guided transactional workflow without losing state.
 
 ## Why this exists
 

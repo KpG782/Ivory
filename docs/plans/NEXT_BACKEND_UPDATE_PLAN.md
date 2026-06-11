@@ -29,7 +29,7 @@ Current result:
 
 Tighten `_clean_text_value()` in:
 
-- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
+- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
 
 ### Suggested rule changes
 
@@ -78,7 +78,7 @@ That means rejecting the value **before** advancing to the next field.
 
 Option A:
 
-- add field-level validators to [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
+- add field-level validators to [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
 
 Option B:
 
@@ -128,7 +128,7 @@ Best candidate questions:
 
 ### Best place to implement
 
-- [rag.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/rag.py)
+- [rag.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/rag.py)
 
 ### Suggested approach
 
@@ -167,10 +167,10 @@ Make the interruption response render as:
 
 ### Best place to inspect
 
-- [graph.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/graph.py)
+- [graph.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/graph.py)
 - frontend streaming/rendering in:
-  - [useChat.ts](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/frontend/src/hooks/useChat.ts)
-  - [MessageBubble.tsx](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/frontend/src/components/MessageBubble.tsx)
+  - [useChat.ts](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/frontend/src/hooks/useChat.ts)
+  - [MessageBubble.tsx](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/frontend/src/components/MessageBubble.tsx)
 
 ### Success criteria
 

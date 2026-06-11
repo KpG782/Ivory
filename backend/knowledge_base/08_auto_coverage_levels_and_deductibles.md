@@ -1,6 +1,6 @@
 # Auto Coverage Levels And Deductibles
 
-ShieldBase auto insurance uses three simplified coverage levels for quoting: basic, standard, and comprehensive.
+Ivory auto insurance uses three simplified coverage levels for quoting: basic, standard, and comprehensive.
 
 ## Basic
 
@@ -37,7 +37,7 @@ This level is usually best for:
 
 ## Comprehensive
 
-Comprehensive is the highest quote tier in the ShieldBase demo flow.
+Comprehensive is the highest quote tier in the Ivory demo flow.
 
 Typical elements:
 

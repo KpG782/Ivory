@@ -2,7 +2,7 @@
 
 ## What This Project Is
 
-ShieldBase Insurance Assistant — a LangGraph-based chatbot for a take-home assessment (Mid-Level Software Engineer role). The bot has two modes:
+Ivory Insurance Assistant — a LangGraph-based chatbot for a take-home assessment (Mid-Level Software Engineer role). The bot has two modes:
 
 1. **Conversational (RAG)** — answers questions about insurance products using vector search over a knowledge base
 2. **Transactional (Quote Flow)** — structured workflow to collect customer info and generate insurance quotes
@@ -58,7 +58,7 @@ backend/
     llm.py             — OpenRouter client wrapper
     vectorstore.py     — ChromaDB init, ingestion, retrieval
     quote_calculator.py — Premium calculation (base rates × risk factors)
-  knowledge_base/      — markdown knowledge-base files about ShieldBase Insurance
+  knowledge_base/      — markdown knowledge-base files about Ivory Insurance
 
 frontend/
   app/

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { QuoteCard } from "./components/QuoteCard";
-import { ShieldBaseLogo } from "./components/ShieldBaseLogo";
+import { IvoryLogo } from "./components/IvoryLogo";
 import { useChat } from "./hooks/useChat";
 
 function formatInsuranceLabel(value: string | null | undefined): string {
@@ -31,9 +31,9 @@ export default function QuoteConfirmationPage() {
       <div className="mx-auto flex max-w-5xl flex-col gap-6 md:gap-8">
         <header className="flex flex-col gap-4 rounded-[1.75rem] border border-black/8 bg-white/75 px-4 py-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] backdrop-blur sm:px-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
-            <ShieldBaseLogo className="h-10 w-10 shrink-0" />
+            <IvoryLogo className="h-10 w-10 shrink-0" />
             <span className="font-[family-name:var(--font-display)] text-xl font-bold tracking-tight text-slate-900">
-              ShieldBase
+              Ivory
             </span>
             <nav className="hidden items-center space-x-3 text-sm text-slate-500 md:flex">
               <span>Home</span>
@@ -81,7 +81,7 @@ export default function QuoteConfirmationPage() {
 
             <div className="flex items-start gap-3 md:gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white">
-                <ShieldBaseLogo className="h-6 w-6" />
+                <IvoryLogo className="h-6 w-6" />
               </div>
 
               <div className="flex-1 space-y-6">

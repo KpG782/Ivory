@@ -1,6 +1,6 @@
 # Life Insurance Underwriting, Beneficiaries, And Policy Basics
 
-ShieldBase life insurance in this demo is a simple term-style quote product, but users often ask about underwriting and beneficiary rules.
+Ivory life insurance in this demo is a simple term-style quote product, but users often ask about underwriting and beneficiary rules.
 
 ## What term life insurance does
 
@@ -31,7 +31,7 @@ Life insurance pricing commonly considers:
 - requested coverage amount
 - term length
 
-More advanced underwriting in real insurance may also consider medical history, prescription history, occupation, and risky hobbies, but the ShieldBase demo keeps this simplified.
+More advanced underwriting in real insurance may also consider medical history, prescription history, occupation, and risky hobbies, but the Ivory demo keeps this simplified.
 
 ## Contestability and disclosure
 

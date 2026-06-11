@@ -1,4 +1,4 @@
-"""LangGraph orchestration for ShieldBase.
+"""LangGraph orchestration for Ivory.
 
 This is a deterministic state machine. Each user turn is a single graph
 invocation that runs ``router -> handler -> END``. The router node makes one

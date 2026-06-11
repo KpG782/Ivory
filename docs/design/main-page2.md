@@ -3,7 +3,7 @@
 <html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>ShieldBase | Quote Confirmation</title>
+<title>Ivory | Quote Confirmation</title>
 <!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
 <!-- Material Symbols -->
@@ -101,7 +101,7 @@
 <!-- TopNavBar -->
 <header class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center px-6 py-3 w-full max-w-full sticky top-0 z-50">
 <div class="flex items-center gap-4">
-<span class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50">ShieldBase</span>
+<span class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Ivory</span>
 </div>
 <nav class="hidden md:flex items-center space-x-8">
 <a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 text-sm font-medium transition-colors" href="#">Home</a>

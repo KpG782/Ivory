@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChatWindow } from "./components/ChatWindow";
 import { QuoteCard } from "./components/QuoteCard";
-import { ShieldBaseLogo } from "./components/ShieldBaseLogo";
+import { IvoryLogo } from "./components/IvoryLogo";
 import { useChat } from "./hooks/useChat";
 import {
   checkAuthStatus,
@@ -174,10 +174,10 @@ export default function App() {
       <main className="ui-fade-in flex min-h-screen overflow-x-clip items-center justify-center px-4 py-8 text-[#191c1e]">
         <section className="ui-rise-in relative w-full max-w-md overflow-hidden rounded-[2rem] border border-black/8 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
           <div className="flex items-center gap-3">
-            <ShieldBaseLogo className="h-10 w-10 shrink-0" />
+            <IvoryLogo className="h-10 w-10 shrink-0" />
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                ShieldBase Access
+                Ivory Access
               </p>
               <p className="mt-1 text-sm text-slate-500">Secure workspace entry</p>
             </div>
@@ -252,7 +252,7 @@ export default function App() {
             <div className="ui-fade-in absolute inset-0 flex items-center justify-center bg-[rgba(252,252,250,0.84)] backdrop-blur-sm">
               <div className="ui-rise-in flex flex-col items-center gap-4 rounded-[1.5rem] border border-black/8 bg-white/90 px-6 py-6 shadow-[0_18px_46px_rgba(15,23,42,0.08)]">
                 <div className="ui-spin-slow flex h-14 w-14 items-center justify-center rounded-full border border-[#d9c69b] bg-[#f8f3e6] p-2.5 shadow-[0_10px_24px_rgba(0,81,213,0.12)]">
-                  <ShieldBaseLogo className="h-full w-full" />
+                  <IvoryLogo className="h-full w-full" />
                 </div>
                 <div className="text-center">
                   <p className="font-[family-name:var(--font-display)] text-lg font-bold text-slate-950">
@@ -296,10 +296,10 @@ export default function App() {
               <div className={`flex items-center ${sidebarOpen ? "justify-between" : "justify-center"}`}>
                 {sidebarOpen ? (
                   <div className="flex items-center gap-3">
-                    <ShieldBaseLogo className="h-10 w-10 shrink-0" />
+                    <IvoryLogo className="h-10 w-10 shrink-0" />
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                        ShieldBase
+                        Ivory
                       </p>
                       <p className="mt-1 text-sm text-slate-600">Workspace</p>
                     </div>
@@ -448,10 +448,10 @@ export default function App() {
             <div className="flex h-full flex-col gap-4 overflow-auto">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <ShieldBaseLogo className="h-10 w-10 shrink-0" />
+                  <IvoryLogo className="h-10 w-10 shrink-0" />
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                      ShieldBase
+                      Ivory
                     </p>
                     <p className="mt-1 text-sm text-slate-600">Workspace</p>
                   </div>
@@ -542,10 +542,10 @@ export default function App() {
                   <span className="material-symbols-outlined text-[20px]">menu</span>
                 </button>
                 <div className="flex items-center gap-3">
-                  <ShieldBaseLogo className="h-10 w-10 shrink-0" />
+                  <IvoryLogo className="h-10 w-10 shrink-0" />
                   <div>
                   <p className="font-[family-name:var(--font-display)] text-lg font-bold text-slate-950">
-                    ShieldBase
+                    Ivory
                   </p>
                   <p className="text-sm text-slate-500">
                     Chat-first quote workspace

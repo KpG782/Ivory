@@ -1,4 +1,4 @@
-# ShieldBase ASCII Architecture
+# Ivory ASCII Architecture
 
 This document reflects the current implementation in this repository.
 

@@ -15,7 +15,7 @@ const displayFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "ShieldBase Insurance Assistant",
+  title: "Ivory Insurance Assistant",
   description:
     "Responsive insurance assistant UI for conversational answers and structured quote flows."
 };

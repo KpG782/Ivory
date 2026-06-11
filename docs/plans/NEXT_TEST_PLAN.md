@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This plan updates the manual and automated test priorities based on the current state of the ShieldBase repo.
+This plan updates the manual and automated test priorities based on the current state of the Ivory repo.
 
 It is meant to answer:
 

@@ -1,2 +1,2 @@
-"""ShieldBase backend package."""
+"""Ivory backend package."""
 

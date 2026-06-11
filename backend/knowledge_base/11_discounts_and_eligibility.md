@@ -4,7 +4,7 @@ Customers often want to know whether they qualify for discounts or whether they 
 
 ## Example discount themes
 
-ShieldBase can describe common insurance discount concepts such as:
+Ivory can describe common insurance discount concepts such as:
 
 - multi-policy or bundling discounts
 - claims-free or safe-driver discounts

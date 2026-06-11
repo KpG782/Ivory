@@ -1,6 +1,6 @@
-# Research Prompt Pack — Find & Validate a Real-Data Problem to Rebrand ShieldBase Into
+# Research Prompt Pack — Find & Validate a Real-Data Problem to Rebrand the Base Chatbot Into
 
-**Goal:** keep the ShieldBase *architecture* (deterministic state machine + RAG + stateful slot-filling + durable memory) and **rebrand it onto a real, validated, underserved problem with real open data** — so it becomes a standout portfolio project instead of a toy-data demo.
+**Goal:** keep the existing *architecture* (deterministic state machine + RAG + stateful slot-filling + durable memory) and **rebrand it onto a real, validated, underserved problem with real open data** — so it becomes a standout portfolio project instead of a toy-data demo.
 
 ## How to use
 1. Paste **Prompt 1** into a **web-enabled** model (ChatGPT Search/Deep Research, Claude with web search, Perplexity, or Gemini).

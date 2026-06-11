@@ -102,7 +102,7 @@ These are the best quick wins if you want one more improvement cycle before subm
 
 ### 1. Final README cleanup
 
-The root [README.md](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/README.md) still contains older structure references and outdated stack notes from before the current repo evolved.
+The root [README.md](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/README.md) still contains older structure references and outdated stack notes from before the current repo evolved.
 
 Updating it would improve repository professionalism immediately.
 
@@ -176,8 +176,8 @@ You should answer:
 
 You should answer:
 
-- field-entry coercion and guardrails in [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
-- full quote-level validation in [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/services/quote_calculator.py)
+- field-entry coercion and guardrails in [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
+- full quote-level validation in [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/services/quote_calculator.py)
 
 ### 4. Where is state stored and updated?
 

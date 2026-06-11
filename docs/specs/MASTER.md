@@ -14,13 +14,13 @@ We are not looking for a production-ready product. We want to see how you design
 transactions, and how quickly you can build something coherent with an unfamiliar 
 framework. 
 2. The Scenario 
-Your chatbot is an AI assistant for a fictional insurance company called “ShieldBase 
-Insurance.ˮ ShieldBase offers three types of insurance: auto, home, and life. The 
+Your chatbot is an AI assistant for a fictional insurance company called “Ivory 
+Insurance.ˮ Ivory offers three types of insurance: auto, home, and life. The 
 assistant helps prospective customers learn about these products and get personalized 
 quotes. 
 Your chatbot must support two modes of interaction: 
 2.1 Conversational Mode RAG 
-The user asks general questions about ShieldBaseʼs insurance products. The bot retrieves relevant information from your knowledge base and responds naturally. Examples: 
+The user asks general questions about Ivoryʼs insurance products. The bot retrieves relevant information from your knowledge base and responds naturally. Examples: 
 • “What types of insurance do you offer?ˮ
 • “What does your auto policy cover?ˮ 
 • “Do you cover pre-existing conditions on life insurance?ˮ 
@@ -65,7 +65,7 @@ B. Frontend & Chat Experience
 Build a web-based chat UI that feels like a real product — clear message bubbles, smooth scroll, loading states. Bonus: package it as an embeddable widget (iframe, web 
 component, or script tag) with a short integration snippet showing how to drop it into any website. 
 4. Knowledge Base 
-Create a small knowledge base 510 documents or text chunks) about ShieldBase 
+Create a small knowledge base 510 documents or text chunks) about Ivory 
 Insurance. This can be as simple as markdown or text files covering: 
 • Company overview and available products (auto, home, life) 
 • Coverage details for each product type (whatʼs included, whatʼs excluded) 

@@ -1,6 +1,6 @@
 # Backend Deployment With Docker Hub And Easypanel
 
-This is the cleanest deployment path for the current ShieldBase backend.
+This is the cleanest deployment path for the current Ivory backend.
 
 ## Recommended Setup
 
@@ -15,15 +15,15 @@ That setup is compatible with the current frontend because the Next proxy routes
 - Docker Hub account with permission to push images
 - Easypanel running on your server
 - `OPENROUTER_API_KEY`
-- a public backend URL such as `https://shieldbase-api.yourdomain.com`
+- a public backend URL such as `https://ivory-api.yourdomain.com`
 
 ## Backend Image
 
 The repo now includes:
 
-- [Dockerfile](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/Dockerfile)
-- [.dockerignore](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/.dockerignore)
-- [docker-compose.backend.yml](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/docker-compose.backend.yml)
+- [Dockerfile](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/Dockerfile)
+- [.dockerignore](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/.dockerignore)
+- [docker-compose.backend.yml](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/docker-compose.backend.yml)
 
 Build context should be the `backend/` folder.
 
@@ -42,16 +42,16 @@ From the repo root:
 
 ```bash
 cd backend
-docker build -t kpg782/shieldbase-backend:latest .
-docker push kpg782/shieldbase-backend:latest
+docker build -t kpg782/ivory-backend:latest .
+docker push kpg782/ivory-backend:latest
 ```
 
 If you want a versioned tag too:
 
 ```bash
-docker build -t kpg782/shieldbase-backend:v1 -t kpg782/shieldbase-backend:latest .
-docker push kpg782/shieldbase-backend:v1
-docker push kpg782/shieldbase-backend:latest
+docker build -t kpg782/ivory-backend:v1 -t kpg782/ivory-backend:latest .
+docker push kpg782/ivory-backend:v1
+docker push kpg782/ivory-backend:latest
 ```
 
 ## Optional Compose Run On Your Own Server
@@ -68,7 +68,7 @@ That compose file is intentionally backend-only and optimized for the current ap
 
 Create a new app/service in Easypanel using an existing Docker image:
 
-- Image: `kpg782/shieldbase-backend:latest`
+- Image: `kpg782/ivory-backend:latest`
 - Container port: `8000`
 - Public HTTP port: expose through Easypanel's domain/proxy
 
@@ -122,7 +122,7 @@ In your Vercel project, set:
 Example:
 
 ```text
-BACKEND_API_BASE_URL=https://shieldbase-api.example.com
+BACKEND_API_BASE_URL=https://ivory-api.example.com
 ```
 
 The frontend proxy routes will then forward:
@@ -182,7 +182,7 @@ Vercel Next.js frontend
 Easypanel reverse proxy
   │
   ▼
-Docker container: kpg782/shieldbase-backend
+Docker container: kpg782/ivory-backend
   │
   ├─ FastAPI app
   ├─ in-memory session store

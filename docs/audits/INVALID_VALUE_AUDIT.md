@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This audit focuses specifically on invalid-value handling in the current ShieldBase setup.
+This audit focuses specifically on invalid-value handling in the current Ivory setup.
 
 It answers:
 
@@ -19,7 +19,7 @@ Invalid values are now checked in two layers:
 
 This happens in:
 
-- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
+- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
 
 This layer catches:
 
@@ -33,7 +33,7 @@ This layer catches:
 
 This happens in:
 
-- [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/services/quote_calculator.py)
+- [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/services/quote_calculator.py)
 
 This layer catches:
 

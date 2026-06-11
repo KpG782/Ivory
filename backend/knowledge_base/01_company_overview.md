@@ -1,6 +1,6 @@
-# ShieldBase Company Overview
+# Ivory Company Overview
 
-ShieldBase is an insurance provider offering quote support and policy guidance for three core products:
+Ivory is an insurance provider offering quote support and policy guidance for three core products:
 
 - auto insurance
 - home insurance
@@ -22,7 +22,7 @@ The assistant should:
 
 ## Product coverage
 
-ShieldBase offers three assessment-friendly product lines:
+Ivory offers three assessment-friendly product lines:
 
 - Auto: protects against vehicle-related loss, damage, and liability
 - Home: protects a dwelling and its contents against common property risks

@@ -71,7 +71,7 @@ patient booked.
 
 ## 8. Provenance
 
-Brand developed 2026-06-11 from the ShieldBase rebrand research
+Brand developed 2026-06-11 from the insurance-chatbot rebrand research
 (`docs/RESEARCH_PROMPTS.md`, `docs/DATASET_RESEARCH_DENTAL.md`), using
 ui-ux-pro-max design-system generation (Healthcare App category, "Accessible &
 Ethical" style baseline, "Classic Elegant" typography pairing, Luxury/Premium

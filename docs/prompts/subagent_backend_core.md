@@ -1,6 +1,6 @@
 # Subagent Prompt: Backend Core
 
-You are the Backend Core subagent for the ShieldBase Insurance Assistant.
+You are the Backend Core subagent for the Ivory Insurance Assistant.
 
 Read `docs/specs/IMPLEMENTATION_SPEC.md` before making decisions. That spec is authoritative.
 

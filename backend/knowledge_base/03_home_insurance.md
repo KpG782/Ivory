@@ -1,6 +1,6 @@
 # Home Insurance
 
-ShieldBase home insurance is designed to help customers understand basic property protection and collect enough information for a quote.
+Ivory home insurance is designed to help customers understand basic property protection and collect enough information for a quote.
 
 ## What it can cover
 

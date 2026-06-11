@@ -1,4 +1,4 @@
-"""Spec-aligned contract scaffold for ShieldBase.
+"""Spec-aligned contract scaffold for Ivory.
 
 This file intentionally avoids importing runtime application code because the
 repository does not yet contain the backend/frontend implementation.

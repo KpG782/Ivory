@@ -55,7 +55,7 @@ function sanitizeFilePart(value: string): string {
 function buildExportFileName(quote: QuoteResult, extension: string): string {
   const product = sanitizeFilePart(String(quote.product_type || "insurance"));
   const coverage = sanitizeFilePart(String(quote.coverage_level || "quote"));
-  return `shieldbase-${product}-${coverage}.${extension}`;
+  return `ivory-${product}-${coverage}.${extension}`;
 }
 
 function toPrettyJson(quote: QuoteResult): string {

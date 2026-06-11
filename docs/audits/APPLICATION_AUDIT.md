@@ -1,8 +1,8 @@
-# ShieldBase Application Audit
+# Ivory Application Audit
 
 ## Purpose
 
-This audit summarizes the current state of the ShieldBase application after the recent orchestration, retrieval, and UI cleanup work.
+This audit summarizes the current state of the Ivory application after the recent orchestration, retrieval, and UI cleanup work.
 
 It focuses on:
 
@@ -46,8 +46,8 @@ The backend streams SSE and returns a session snapshot in `message_complete`.
 
 Relevant files:
 
-- [main.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/main.py)
-- [graph.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/graph.py)
+- [main.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/main.py)
+- [graph.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/graph.py)
 
 ### 2. Graph orchestration shape
 
@@ -62,12 +62,12 @@ The current LangGraph-style orchestration logic is straightforward and understan
 
 Relevant files:
 
-- [graph.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/graph.py)
-- [router.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/router.py)
-- [identify_product.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/identify_product.py)
-- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
-- [validate_quote.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/validate_quote.py)
-- [confirm.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/confirm.py)
+- [graph.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/graph.py)
+- [router.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/router.py)
+- [identify_product.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/identify_product.py)
+- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
+- [validate_quote.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/validate_quote.py)
+- [confirm.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/confirm.py)
 
 ### 3. Mid-flow question handling
 
@@ -80,13 +80,13 @@ This is one of the most important assignment requirements, and the current graph
 
 This is implemented directly in:
 
-- [graph.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/graph.py)
+- [graph.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/graph.py)
 
 ### 4. Deterministic field ordering
 
 Each product has an explicit ordered field schema in:
 
-- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
+- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
 
 That is a real improvement because the quote flow no longer depends on free-form inference for every step.
 
@@ -98,7 +98,7 @@ That is correct for this assignment.
 
 Relevant file:
 
-- [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/services/quote_calculator.py)
+- [quote_calculator.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/services/quote_calculator.py)
 
 ### 6. Frontend is now backend-driven in the important places
 
@@ -106,9 +106,9 @@ The frontend reads backend session state and uses it to decide whether confirmat
 
 Relevant files:
 
-- [useChat.ts](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/frontend/src/hooks/useChat.ts)
-- [App.tsx](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/frontend/src/App.tsx)
-- [QuoteConfirmationPage.tsx](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/frontend/src/QuoteConfirmationPage.tsx)
+- [useChat.ts](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/frontend/src/hooks/useChat.ts)
+- [App.tsx](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/frontend/src/App.tsx)
+- [QuoteConfirmationPage.tsx](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/frontend/src/QuoteConfirmationPage.tsx)
 
 ## What has been improved well
 
@@ -139,7 +139,7 @@ The retrieval layer now reranks results so obvious product-overview questions ar
 
 Relevant file:
 
-- [vectorstore.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/services/vectorstore.py)
+- [vectorstore.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/services/vectorstore.py)
 
 ## What still looks incomplete or risky
 
@@ -188,7 +188,7 @@ Still missing strong automated checks for:
 
 Relevant file:
 
-- [test_backend_integration.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/tests/test_backend_integration.py)
+- [test_backend_integration.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/tests/test_backend_integration.py)
 
 ### 3. Confirmation semantics are functional but simple
 
@@ -208,8 +208,8 @@ Examples:
 
 Relevant files:
 
-- [confirm.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/confirm.py)
-- [router.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/router.py)
+- [confirm.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/confirm.py)
+- [router.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/router.py)
 
 ### 4. UI state is mostly aligned, but some paths still rely on local optimistic state
 
@@ -225,7 +225,7 @@ This is not catastrophic, but it is worth knowing.
 
 Relevant file:
 
-- [useChat.ts](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/frontend/src/hooks/useChat.ts)
+- [useChat.ts](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/frontend/src/hooks/useChat.ts)
 
 ### 5. Retrieval still depends on environment quality
 

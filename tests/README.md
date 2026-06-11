@@ -1,6 +1,6 @@
 # Test Coverage
 
-This folder contains both spec scaffolding and executable backend integration tests for the ShieldBase Insurance Assistant.
+This folder contains both spec scaffolding and executable backend integration tests for the Ivory Insurance Assistant.
 
 The frontend browser flow is still primarily a manual test path, but the Python suite now covers the implemented FastAPI backend contracts directly.
 

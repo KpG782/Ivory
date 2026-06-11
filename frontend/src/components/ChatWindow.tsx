@@ -63,7 +63,7 @@ export function ChatWindow({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             Conversation
           </p>
-          <p className="mt-1 text-sm text-slate-500">Live conversation with ShieldBase</p>
+          <p className="mt-1 text-sm text-slate-500">Live conversation with Ivory</p>
         </div>
         <div className="flex flex-wrap gap-2 sm:justify-end">
           <button

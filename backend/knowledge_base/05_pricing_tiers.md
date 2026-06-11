@@ -1,6 +1,6 @@
 # Pricing Tiers
 
-ShieldBase uses simple quote tiers to keep the assistant easy to explain during an assessment.
+Ivory uses simple quote tiers to keep the assistant easy to explain during an assessment.
 
 ## Tier definitions
 

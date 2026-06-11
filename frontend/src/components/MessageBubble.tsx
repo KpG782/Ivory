@@ -40,7 +40,7 @@ function MessageBubbleComponent({ message }: { message: ChatMessage }) {
           message.role === "user" ? "text-white/70" : "text-slate-500"
         }`}
       >
-        <span>{message.role === "user" ? "You" : "ShieldBase"}</span>
+        <span>{message.role === "user" ? "You" : "Ivory"}</span>
         {message.streaming ? (
           <span className="flex items-center gap-1 text-cyan-500" role="status" aria-live="polite">
             <span className="ui-soft-pulse inline-block h-1.5 w-1.5 rounded-full bg-cyan-500" />

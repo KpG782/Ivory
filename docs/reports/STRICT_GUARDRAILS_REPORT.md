@@ -17,7 +17,7 @@ The collection layer now supports immediate minimum-value checks through field s
 
 This was added in:
 
-- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/collect_details.py)
+- [collect_details.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/collect_details.py)
 
 Relevant fields now have stricter entry-time rules:
 
@@ -56,7 +56,7 @@ Instead of dumping chunk fragments, the backend now tries to produce short direc
 
 This was updated in:
 
-- [rag.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/backend/nodes/rag.py)
+- [rag.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/nodes/rag.py)
 
 ### 4. Automated test coverage was expanded again
 
@@ -69,7 +69,7 @@ The backend suite now explicitly covers the remaining visible failure cases:
 
 Relevant file:
 
-- [test_backend_integration.py](/C:/Users/kpg78/Downloads/TENEXT/shieldbase-chatbot/tests/test_backend_integration.py)
+- [test_backend_integration.py](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/tests/test_backend_integration.py)
 
 ## What is now verified
 

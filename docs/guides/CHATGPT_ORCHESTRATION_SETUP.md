@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This guide shows how to set up your main ChatGPT orchestrator and subagents for implementing the ShieldBase project using the repository spec as the source of truth.
+This guide shows how to set up your main ChatGPT orchestrator and subagents for implementing the Ivory project using the repository spec as the source of truth.
 
 Use [`docs/specs/IMPLEMENTATION_SPEC.md`](../specs/IMPLEMENTATION_SPEC.md) as the authoritative build contract.
 

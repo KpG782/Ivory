@@ -1,4 +1,4 @@
-# ShieldBase — Pre-Demo Checklist
+# Ivory — Pre-Demo Checklist
 
 ---
 
@@ -17,7 +17,7 @@
 - [ ] `cd frontend && npm run dev`
 - [ ] Open `http://localhost:3000`
 - [ ] Confirm login screen appears (not a blank page, not a 500)
-- [ ] Log in: username `admin`, password `shieldbase123` — confirm chat screen loads
+- [ ] Log in: username `admin`, password `ivory123` — confirm chat screen loads
   - Use the eye icon button to toggle password visibility if needed
   - Verify `GET /api/auth/check` returns `{"authenticated": true}` in DevTools → Network
 
@@ -46,9 +46,9 @@
 ## Demo Script (8-10 minutes)
 
 ### Opening (30 seconds)
-"ShieldBase is a hybrid insurance assistant. It does two things in one session: answers knowledge-base questions using RAG, and runs a structured multi-step quote workflow. The key design challenge — and what I want to show you — is that you can interrupt a quote, ask a side question, and the bot brings you back to exactly where you were."
+"Ivory is a hybrid insurance assistant. It does two things in one session: answers knowledge-base questions using RAG, and runs a structured multi-step quote workflow. The key design challenge — and what I want to show you — is that you can interrupt a quote, ask a side question, and the bot brings you back to exactly where you were."
 
-**Credentials:** Username `admin`, password `shieldbase123`. Use the eye icon to reveal the password if needed. Auth is server-side httpOnly cookie — there's no "Use saved access" button anymore.
+**Credentials:** Username `admin`, password `ivory123`. Use the eye icon to reveal the password if needed. Auth is server-side httpOnly cookie — there's no "Use saved access" button anymore.
 
 ---
 

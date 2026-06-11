@@ -3,7 +3,7 @@
 <html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>ShieldBase AI Assistant</title>
+<title>Ivory AI Assistant</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -90,7 +90,7 @@
 <!-- TopNavBar -->
 <nav class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center px-6 py-3 w-full max-w-full fixed top-0 z-50">
 <div class="flex items-center gap-8">
-<span class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50 font-headline">ShieldBase</span>
+<span class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50 font-headline">Ivory</span>
 <div class="hidden md:flex gap-6">
 <a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 transition-colors text-sm font-medium" href="#">Home</a>
 <a class="text-blue-700 dark:text-blue-400 font-semibold border-b-2 border-blue-700 text-sm" href="#">Dashboard</a>
@@ -178,7 +178,7 @@
 <div class="bg-primary-container text-white p-1 rounded">
 <span class="material-symbols-outlined text-[14px]">smart_toy</span>
 </div>
-<span class="text-[10px] font-bold text-on-surface-variant tracking-widest uppercase">ShieldBase AI</span>
+<span class="text-[10px] font-bold text-on-surface-variant tracking-widest uppercase">Ivory AI</span>
 </div>
 <div class="ai-bubble bg-surface-container-low p-6 text-on-surface leading-relaxed text-[15px] shadow-sm">
                             Sure, I'd be happy to help you with an auto insurance quote! First, could you tell me what kind of vehicle you're looking to insure? (e.g., Year, Make, Model)
@@ -203,7 +203,7 @@
 <div class="bg-primary-container text-white p-1 rounded">
 <span class="material-symbols-outlined text-[14px]">smart_toy</span>
 </div>
-<span class="text-[10px] font-bold text-on-surface-variant tracking-widest uppercase">ShieldBase AI</span>
+<span class="text-[10px] font-bold text-on-surface-variant tracking-widest uppercase">Ivory AI</span>
 </div>
 <div class="ai-bubble bg-surface-container-low p-6 text-on-surface shadow-sm overflow-hidden">
 <p class="font-headline font-bold text-lg mb-4 text-primary-container">The Architectural Guide to Comprehensive Coverage</p>

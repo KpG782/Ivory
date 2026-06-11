@@ -1,4 +1,4 @@
-# ShieldBase — Interview Q&A Prep
+# Ivory — Interview Q&A Prep
 
 Anticipated questions and strong answers, grounded in the actual codebase.
 
@@ -176,7 +176,7 @@ Anticipated questions and strong answers, grounded in the actual codebase.
 
 **TL;DR:** Two focused prompts — one for knowledge Q&A (RAG), one for intent classification — both with tight constraints.
 
-**Full Answer:** There are two places where prompts are used. The RAG prompt (`rag.py:12-17`) is a system prompt that establishes persona ("ShieldBase insurance assistant"), scope constraint ("answer only from context"), and a behavior for quote interruptions ("do not reset quote progress"). The user prompt is the question plus the numbered retrieved chunks. The intent classification prompt (`router.py:131-141`) is very minimal: classify into exactly one of three values, return JSON with a single key. I deliberately kept both prompts short — long, complex prompts increase token costs and give the 8B model more ways to go off-script. The most important prompt engineering decision was not adding more instructions, but instead building the deterministic overrides that eliminate the need for the LLM on ~60% of classification calls.
+**Full Answer:** There are two places where prompts are used. The RAG prompt (`rag.py:12-17`) is a system prompt that establishes persona ("Ivory insurance assistant"), scope constraint ("answer only from context"), and a behavior for quote interruptions ("do not reset quote progress"). The user prompt is the question plus the numbered retrieved chunks. The intent classification prompt (`router.py:131-141`) is very minimal: classify into exactly one of three values, return JSON with a single key. I deliberately kept both prompts short — long, complex prompts increase token costs and give the 8B model more ways to go off-script. The most important prompt engineering decision was not adding more instructions, but instead building the deterministic overrides that eliminate the need for the LLM on ~60% of classification calls.
 
 **Code Reference:** `nodes/rag.py:12-17`, `nodes/router.py:131-141`
 
@@ -292,7 +292,7 @@ Anticipated questions and strong answers, grounded in the actual codebase.
 
 **TL;DR:** Backend as a Docker container via docker-compose or Kubernetes; frontend deployed to Vercel or as a Docker container.
 
-**Full Answer:** The backend has a production-ready `Dockerfile` already. It uses `python:3.12-slim`, installs dependencies, copies source, and runs `uvicorn main:app --host 0.0.0.0 --port ${PORT} --proxy-headers`. The `docker-compose.backend.yml` shows the full deployment config: persistent volume for ChromaDB and model weights at `/data`, environment variables for secrets, and a healthcheck that curls `/health`. For the frontend, `next build` + `next start` runs on Node.js — it deploys to Vercel with zero config, or as a Docker container for self-hosted. `BACKEND_API_BASE_URL` environment variable connects the Next.js proxy to wherever the FastAPI backend is running. The backend is already deployed to Docker Hub as `kpg782/shieldbase-backend:latest`.
+**Full Answer:** The backend has a production-ready `Dockerfile` already. It uses `python:3.12-slim`, installs dependencies, copies source, and runs `uvicorn main:app --host 0.0.0.0 --port ${PORT} --proxy-headers`. The `docker-compose.backend.yml` shows the full deployment config: persistent volume for ChromaDB and model weights at `/data`, environment variables for secrets, and a healthcheck that curls `/health`. For the frontend, `next build` + `next start` runs on Node.js — it deploys to Vercel with zero config, or as a Docker container for self-hosted. `BACKEND_API_BASE_URL` environment variable connects the Next.js proxy to wherever the FastAPI backend is running. The backend is already deployed to Docker Hub as `kpg782/ivory-backend:latest`.
 
 **Code Reference:** `backend/Dockerfile`, `docker-compose.backend.yml`, `frontend/app/api/chat/route.ts:4`
 
@@ -316,11 +316,11 @@ Anticipated questions and strong answers, grounded in the actual codebase.
 
 **TL;DR:** Backend secrets in `.env`/shell; frontend credentials in server-side env vars only — nothing sensitive in the client bundle.
 
-**Full Answer:** The backend's `env.py` loads `.env` files from the backend directory and repo root using `python-dotenv` with `override=False` — shell env vars take precedence. In Docker, secrets are injected via `environment:` in `docker-compose.backend.yml`. The only required secret is `OPENROUTER_API_KEY`. On the frontend, `BACKEND_API_BASE_URL` is server-side (no `NEXT_PUBLIC_` prefix), so the backend URL never reaches the browser. Auth credentials (`AUTH_USERNAME`, `AUTH_PASSWORD`) and `SESSION_SECRET` are also server-side env vars in `frontend/.env.local` — they're read by the Next.js API routes (`app/api/auth/`) and never bundled into client JavaScript. The only `NEXT_PUBLIC_` auth var is `NEXT_PUBLIC_AUTH_DEMO_USER`, an optional username hint for the login screen. The password is intentionally not exposed. Previously the password was in `NEXT_PUBLIC_SHIELDBASE_LOGIN_PASS` — that's been removed entirely.
+**Full Answer:** The backend's `env.py` loads `.env` files from the backend directory and repo root using `python-dotenv` with `override=False` — shell env vars take precedence. In Docker, secrets are injected via `environment:` in `docker-compose.backend.yml`. The only required secret is `OPENROUTER_API_KEY`. On the frontend, `BACKEND_API_BASE_URL` is server-side (no `NEXT_PUBLIC_` prefix), so the backend URL never reaches the browser. Auth credentials (`AUTH_USERNAME`, `AUTH_PASSWORD`) and `SESSION_SECRET` are also server-side env vars in `frontend/.env.local` — they're read by the Next.js API routes (`app/api/auth/`) and never bundled into client JavaScript. The only `NEXT_PUBLIC_` auth var is `NEXT_PUBLIC_AUTH_DEMO_USER`, an optional username hint for the login screen. The password is intentionally not exposed. Previously the password was in `NEXT_PUBLIC_IVORY_LOGIN_PASS` — that's been removed entirely.
 
 **Code Reference:** `backend/env.py`, `frontend/app/api/auth/_auth.ts`, `frontend/src/lib/demoAuth.ts`, `frontend/.env.example`
 
-**Gotcha to Avoid:** Don't mention `NEXT_PUBLIC_SHIELDBASE_LOGIN_PASS` as a current issue — it's been removed. Explain how auth was fixed (server-side env vars + httpOnly cookie).
+**Gotcha to Avoid:** Don't mention `NEXT_PUBLIC_IVORY_LOGIN_PASS` as a current issue — it's been removed. Explain how auth was fixed (server-side env vars + httpOnly cookie).
 
 ---
 
@@ -328,7 +328,7 @@ Anticipated questions and strong answers, grounded in the actual codebase.
 
 **TL;DR:** Currently none. Here's what I'd set up.
 
-**Full Answer:** The project doesn't have CI/CD configured yet — it was built as an assessment. For a production setup: a GitHub Actions workflow that runs `pytest tests/` on every PR (the tests run without any external dependencies since the LLM and RAG are monkeypatched). A `typecheck` step running `tsc --noEmit` for the frontend. On merge to main: build and push the Docker image to Docker Hub (already using `kpg782/shieldbase-backend`), and trigger a Watchtower pull on the production host (or update the ECS task definition, or ArgoCD sync, depending on the platform). The backend healthcheck in `docker-compose.backend.yml` handles zero-downtime via the `start_period: 45s` grace period for model loading.
+**Full Answer:** The project doesn't have CI/CD configured yet — it was built as an assessment. For a production setup: a GitHub Actions workflow that runs `pytest tests/` on every PR (the tests run without any external dependencies since the LLM and RAG are monkeypatched). A `typecheck` step running `tsc --noEmit` for the frontend. On merge to main: build and push the Docker image to Docker Hub (already using `kpg782/ivory-backend`), and trigger a Watchtower pull on the production host (or update the ECS task definition, or ArgoCD sync, depending on the platform). The backend healthcheck in `docker-compose.backend.yml` handles zero-downtime via the `start_period: 45s` grace period for model loading.
 
 **Code Reference:** `pytest.ini`, `frontend/package.json:9`, `docker-compose.backend.yml:18-23`
 

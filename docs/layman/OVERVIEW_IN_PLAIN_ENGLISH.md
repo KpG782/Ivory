@@ -1,6 +1,6 @@
-# ShieldBase In Plain English
+# Ivory In Plain English
 
-ShieldBase is an insurance assistant that can do two jobs in one chat:
+Ivory is an insurance assistant that can do two jobs in one chat:
 
 1. answer insurance questions
 2. help a user get a quote step by step
