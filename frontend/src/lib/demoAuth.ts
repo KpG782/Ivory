@@ -17,6 +17,27 @@ export function getDemoUsernameHint(): string {
   return process.env.NEXT_PUBLIC_AUTH_DEMO_USER || "";
 }
 
+/** Whether the one-click demo login button should be shown. */
+export function isDemoLoginEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_AUTH_DEMO_LOGIN === "true";
+}
+
+/** POST /api/auth/login with the demo flag — no credentials cross the wire. */
+export async function serverDemoLogin(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ demo: true }),
+    });
+    if (res.ok) return { ok: true };
+    const data = await res.json().catch(() => ({})) as { error?: string };
+    return { ok: false, error: data.error || "Demo login is not enabled." };
+  } catch {
+    return { ok: false, error: "Login failed. Please check your connection." };
+  }
+}
+
 /** POST /api/auth/login — returns true on success. */
 export async function serverLogin(username: string, password: string): Promise<{ ok: boolean; error?: string }> {
   try {

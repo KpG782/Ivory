@@ -8,6 +8,8 @@ import { useChat } from "./hooks/useChat";
 import {
   checkAuthStatus,
   getDemoUsernameHint,
+  isDemoLoginEnabled,
+  serverDemoLogin,
   serverLogin,
   serverLogout,
 } from "./lib/demoAuth";
@@ -90,6 +92,7 @@ export default function App() {
   // Optional username hint from NEXT_PUBLIC_AUTH_DEMO_USER (safe to expose).
   // The password is never bundled into client code — it is validated server-side.
   const demoUsernameHint = useMemo(() => getDemoUsernameHint(), []);
+  const demoLoginEnabled = useMemo(() => isDemoLoginEnabled(), []);
 
   // Check auth status via the server-side /api/auth/check endpoint on mount.
   // This reads the httpOnly cookie; the client never sees the cookie value.
@@ -156,6 +159,23 @@ export default function App() {
     setIsAuthenticating(false);
   };
 
+  const handleDemoLogin = async () => {
+    if (isAuthenticating) return;
+    setIsAuthenticating(true);
+    setAuthError(null);
+
+    const { ok, error } = await serverDemoLogin();
+
+    if (ok) {
+      setIsAuthenticated(true);
+      setPassword("");
+    } else {
+      setAuthError(error ?? "Demo login is not enabled.");
+    }
+
+    setIsAuthenticating(false);
+  };
+
   const handleLogout = async () => {
     await serverLogout();
     setIsAuthenticated(false);
@@ -189,6 +209,23 @@ export default function App() {
             Enter your workspace credentials to continue.
           </p>
           <div className="mt-6 grid gap-4">
+            {demoLoginEnabled ? (
+              <>
+                <button
+                  type="button"
+                  className="ui-hover-lift rounded-full bg-[#0F766E] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#115E59] disabled:cursor-not-allowed disabled:bg-slate-300"
+                  onClick={() => void handleDemoLogin()}
+                  disabled={isAuthenticating}
+                >
+                  {isAuthenticating ? "Signing in..." : "Enter demo workspace"}
+                </button>
+                <div className="flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-slate-400">
+                  <span className="h-px flex-1 bg-slate-200" />
+                  or sign in with credentials
+                  <span className="h-px flex-1 bg-slate-200" />
+                </div>
+              </>
+            ) : null}
             <label className="grid gap-2">
               <span className="text-sm font-medium text-slate-700">Username</span>
               <input

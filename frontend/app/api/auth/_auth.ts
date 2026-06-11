@@ -59,6 +59,18 @@ export function isValidSession(cookieHeader: string | null): boolean {
   }
 }
 
+/**
+ * Demo login is allowed when the public flag is on AND real credentials are
+ * configured (the session token is an HMAC of them, so they must exist).
+ * The flag is NEXT_PUBLIC_ because the login screen also uses it to decide
+ * whether to render the one-click demo button.
+ */
+export function isDemoLoginEnabled(): boolean {
+  return (
+    process.env.NEXT_PUBLIC_AUTH_DEMO_LOGIN === "true" && authConfig() !== null
+  );
+}
+
 /** Validate a username/password pair against server-side env vars. */
 export function checkCredentials(username: string, password: string): boolean {
   const config = authConfig();
