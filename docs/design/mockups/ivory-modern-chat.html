@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ivory — Modern Chat UI Mockup</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        ivory: '#FAFAF9', ink: '#1C1917', muted: '#57534E',
+        teal: { DEFAULT: '#0F766E', hover: '#115E59', tint: '#CCFBF1' },
+        line: '#E7E5E4', soft: '#F5F5F4',
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        serif: ['"Playfair Display"', 'serif'],
+      },
+    },
+  },
+}
+</script>
+<style>
+  body { background: #ECEAE6; }
+  .frame { width: 1280px; height: 800px; }
+</style>
+</head>
+<body class="font-sans text-ink antialiased">
+
+<p class="mx-auto mt-8 w-[1280px] text-sm font-semibold uppercase tracking-widest text-muted">Screen 1 — Welcome / empty state</p>
+
+<!-- ============ SCREEN 1: WELCOME ============ -->
+<div class="frame mx-auto mt-2 flex overflow-hidden rounded-2xl bg-ivory shadow-xl">
+
+  <!-- Sidebar -->
+  <aside class="flex w-[264px] shrink-0 flex-col border-r border-line bg-soft/60">
+    <div class="flex items-center gap-2.5 px-4 pt-5">
+      <svg class="h-8 w-8" viewBox="0 0 512 512"><rect width="512" height="512" rx="120" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="8"/><text x="256" y="350" text-anchor="middle" font-family="Playfair Display" font-size="280" fill="#0F766E">I</text></svg>
+      <span class="font-serif text-xl">Ivory</span>
+    </div>
+    <div class="px-3 pt-5">
+      <button class="flex w-full cursor-pointer items-center gap-2 rounded-full bg-teal px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-hover">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+        New conversation
+      </button>
+    </div>
+    <nav class="mt-5 flex-1 space-y-4 overflow-y-auto px-3">
+      <div>
+        <p class="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted/70">Today</p>
+        <a class="block cursor-pointer rounded-lg px-3 py-2 text-sm text-ink/90 transition-colors hover:bg-white">Auto quote — Toyota Camry</a>
+        <a class="block cursor-pointer rounded-lg px-3 py-2 text-sm text-ink/90 transition-colors hover:bg-white">What does comprehensive cover?</a>
+      </div>
+      <div>
+        <p class="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted/70">Yesterday</p>
+        <a class="block cursor-pointer rounded-lg px-3 py-2 text-sm text-ink/90 transition-colors hover:bg-white">Home insurance endorsements</a>
+        <a class="block cursor-pointer rounded-lg px-3 py-2 text-sm text-ink/90 transition-colors hover:bg-white">Life quote — term options</a>
+      </div>
+    </nav>
+    <div class="border-t border-line p-3">
+      <div class="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
+        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-teal-tint text-xs font-bold text-teal">D</span>
+        <span class="flex-1 text-sm font-medium">demo@ivory.app</span>
+        <svg class="h-4 w-4 cursor-pointer text-muted transition-colors hover:text-ink" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="relative flex flex-1 flex-col">
+    <header class="flex items-center justify-between border-b border-line/70 px-6 py-3">
+      <div class="flex items-center gap-2">
+        <svg class="h-5 w-5 cursor-pointer text-muted" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </div>
+      <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1 text-xs font-medium text-muted">
+        <span class="h-1.5 w-1.5 rounded-full bg-teal"></span> Knowledge mode
+      </span>
+    </header>
+
+    <div class="flex flex-1 flex-col items-center justify-center px-6">
+      <svg class="h-14 w-14" viewBox="0 0 512 512"><rect width="512" height="512" rx="120" fill="#fff" stroke="#E7E5E4" stroke-width="6"/><text x="256" y="350" text-anchor="middle" font-family="Playfair Display" font-size="280" fill="#0F766E">I</text></svg>
+      <h1 class="mt-5 font-serif text-4xl text-ink">How can we help today?</h1>
+      <p class="mt-2 text-[15px] text-muted">Ask a policy question, or start a quote — Ivory keeps your place if you get interrupted.</p>
+      <div class="mt-8 grid w-full max-w-2xl grid-cols-2 gap-3">
+        <button class="cursor-pointer rounded-xl border border-line bg-white p-4 text-left transition-shadow hover:shadow-md">
+          <p class="text-sm font-semibold">Start an auto quote</p>
+          <p class="mt-1 text-[13px] leading-5 text-muted">Five quick details, instant premium</p>
+        </button>
+        <button class="cursor-pointer rounded-xl border border-line bg-white p-4 text-left transition-shadow hover:shadow-md">
+          <p class="text-sm font-semibold">What does comprehensive include?</p>
+          <p class="mt-1 text-[13px] leading-5 text-muted">Answers from the policy knowledge base</p>
+        </button>
+        <button class="cursor-pointer rounded-xl border border-line bg-white p-4 text-left transition-shadow hover:shadow-md">
+          <p class="text-sm font-semibold">Home insurance quote</p>
+          <p class="mt-1 text-[13px] leading-5 text-muted">Coverage for your property in minutes</p>
+        </button>
+        <button class="cursor-pointer rounded-xl border border-line bg-white p-4 text-left transition-shadow hover:shadow-md">
+          <p class="text-sm font-semibold">Compare pricing tiers</p>
+          <p class="mt-1 text-[13px] leading-5 text-muted">Basic, standard, and premium side by side</p>
+        </button>
+      </div>
+    </div>
+
+    <!-- Composer -->
+    <div class="px-6 pb-5">
+      <div class="mx-auto max-w-3xl">
+        <div class="flex items-end gap-2 rounded-[28px] border border-line bg-white px-4 py-2.5 shadow-sm focus-within:border-teal focus-within:ring-4 focus-within:ring-teal/10">
+          <textarea rows="1" placeholder="Message Ivory…" class="max-h-40 flex-1 resize-none bg-transparent py-1.5 text-[15px] outline-none placeholder:text-muted/60"></textarea>
+          <button class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-teal text-white transition-colors hover:bg-teal-hover">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+          </button>
+        </div>
+        <p class="mt-2 text-center text-xs text-muted/70">Ivory is an AI assistant — quotes are estimates, not final offers.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<p class="mx-auto mt-12 w-[1280px] text-sm font-semibold uppercase tracking-widest text-muted">Screen 2 — Active quote conversation (slot-filling + inline quote card)</p>
+
+<!-- ============ SCREEN 2: ACTIVE CONVERSATION ============ -->
+<div class="frame mx-auto mt-2 mb-16 flex overflow-hidden rounded-2xl bg-ivory shadow-xl">
+
+  <!-- Sidebar (collapsed) -->
+  <aside class="flex w-[64px] shrink-0 flex-col items-center border-r border-line bg-soft/60 py-5">
+    <svg class="h-8 w-8" viewBox="0 0 512 512"><rect width="512" height="512" rx="120" fill="#FAFAF9" stroke="#E7E5E4" stroke-width="8"/><text x="256" y="350" text-anchor="middle" font-family="Playfair Display" font-size="280" fill="#0F766E">I</text></svg>
+    <button class="mt-5 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-teal text-white transition-colors hover:bg-teal-hover">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <div class="mt-auto">
+      <span class="flex h-8 w-8 items-center justify-center rounded-full bg-teal-tint text-xs font-bold text-teal">D</span>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="relative flex flex-1 flex-col">
+    <header class="flex items-center justify-between border-b border-line/70 px-6 py-3">
+      <p class="text-sm font-semibold">Auto quote — Toyota Camry</p>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-teal-tint px-3 py-1 text-xs font-semibold text-teal">
+          Auto quote · 3 of 5 details
+        </span>
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1 text-xs font-medium text-muted">
+          <span class="h-1.5 w-1.5 rounded-full bg-teal"></span> Collecting
+        </span>
+      </div>
+    </header>
+
+    <!-- Slot progress -->
+    <div class="h-[3px] w-full bg-soft"><div class="h-full w-3/5 rounded-r-full bg-teal"></div></div>
+
+    <!-- Conversation -->
+    <div class="flex-1 overflow-y-auto px-6 py-6">
+      <div class="mx-auto max-w-3xl space-y-6">
+
+        <!-- user bubble -->
+        <div class="flex justify-end">
+          <div class="max-w-[75%] rounded-2xl rounded-br-md bg-teal px-4 py-2.5 text-[15px] leading-6 text-white">I want a quote for auto insurance</div>
+        </div>
+
+        <!-- interruption -->
+        <div class="flex justify-end">
+          <div class="max-w-[75%] rounded-2xl rounded-br-md bg-teal px-4 py-2.5 text-[15px] leading-6 text-white">wait — does comprehensive cover hail damage?</div>
+        </div>
+
+        <div class="flex gap-3">
+          <svg class="mt-0.5 h-7 w-7 shrink-0" viewBox="0 0 512 512"><rect width="512" height="512" rx="120" fill="#fff" stroke="#E7E5E4" stroke-width="6"/><text x="256" y="350" text-anchor="middle" font-family="Playfair Display" font-size="280" fill="#0F766E">I</text></svg>
+          <div class="space-y-3">
+            <div class="text-[15px] leading-7 text-ink">
+              Yes — comprehensive coverage includes hail damage, along with theft, fire, and falling objects. Collision is handled separately.
+              <span class="mt-1 block text-[13px] text-muted">Source: policy knowledge base · 02_auto_insurance</span>
+            </div>
+            <div class="rounded-xl border border-teal/25 bg-teal-tint/40 px-4 py-2.5 text-[14px] leading-6 text-teal-hover">
+              Picking up where we left off — how many <strong>accidents</strong> in the last 5 years?
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <div class="max-w-[75%] rounded-2xl rounded-br-md bg-teal px-4 py-2.5 text-[15px] leading-6 text-white">0, standard coverage</div>
+        </div>
+
+        <!-- assistant + inline quote card -->
+        <div class="flex gap-3">
+          <svg class="mt-0.5 h-7 w-7 shrink-0" viewBox="0 0 512 512"><rect width="512" height="512" rx="120" fill="#fff" stroke="#E7E5E4" stroke-width="6"/><text x="256" y="350" text-anchor="middle" font-family="Playfair Display" font-size="280" fill="#0F766E">I</text></svg>
+          <div class="w-full max-w-md space-y-3">
+            <div class="text-[15px] leading-7 text-ink">All set — here's your quote:</div>
+            <div class="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
+              <div class="flex items-center justify-between border-b border-line bg-soft/50 px-4 py-3">
+                <p class="text-sm font-semibold">Auto insurance quote</p>
+                <span class="rounded-full bg-teal-tint px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-teal">Standard</span>
+              </div>
+              <div class="space-y-2 px-4 py-3 text-sm">
+                <div class="flex justify-between"><span class="text-muted">Vehicle</span><span class="font-medium">Toyota Camry</span></div>
+                <div class="flex justify-between"><span class="text-muted">Driver age</span><span class="font-medium">35</span></div>
+                <div class="flex justify-between"><span class="text-muted">Accidents (5 yr)</span><span class="font-medium">0</span></div>
+                <div class="mt-2 flex justify-between border-t border-line pt-3"><span class="font-semibold">Premium</span><span class="font-serif text-xl text-teal">$1,284<span class="text-sm text-muted">/yr</span></span></div>
+              </div>
+              <div class="flex gap-2 px-4 pb-4">
+                <button class="flex-1 cursor-pointer rounded-full bg-teal px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-hover">Accept quote</button>
+                <button class="cursor-pointer rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-soft">Adjust</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Composer -->
+    <div class="px-6 pb-5">
+      <div class="mx-auto max-w-3xl">
+        <div class="mb-2 flex gap-2">
+          <button class="cursor-pointer rounded-full border border-line bg-white px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:border-teal hover:text-teal">Accept</button>
+          <button class="cursor-pointer rounded-full border border-line bg-white px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:border-teal hover:text-teal">Adjust details</button>
+          <button class="cursor-pointer rounded-full border border-line bg-white px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:border-teal hover:text-teal">Start over</button>
+        </div>
+        <div class="flex items-end gap-2 rounded-[28px] border border-line bg-white px-4 py-2.5 shadow-sm focus-within:border-teal focus-within:ring-4 focus-within:ring-teal/10">
+          <textarea rows="1" placeholder="Message Ivory…" class="max-h-40 flex-1 resize-none bg-transparent py-1.5 text-[15px] outline-none placeholder:text-muted/60"></textarea>
+          <button class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-teal text-white transition-colors hover:bg-teal-hover">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+          </button>
+        </div>
+        <p class="mt-2 text-center text-xs text-muted/70">Ivory is an AI assistant — quotes are estimates, not final offers.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>
