@@ -342,7 +342,7 @@ export default function App() {
           <div className="flex min-w-0 items-center gap-2">
             <button
               type="button"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-soft hover:text-ink lg:hidden"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted sm:h-9 sm:w-9 transition-colors hover:bg-soft hover:text-ink lg:hidden"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Open sidebar"
             >
@@ -369,7 +369,7 @@ export default function App() {
             </span>
             <button
               type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-soft hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-muted sm:h-9 sm:w-9 transition-colors hover:bg-soft hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() => void chat.resetSession()}
               disabled={chat.isSending || chat.isResetting}
               aria-label="Reset session"

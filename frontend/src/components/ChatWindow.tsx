@@ -187,7 +187,7 @@ export function ChatWindow({
               type="button"
               onClick={onStop}
               aria-label="Stop generating"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-white transition-colors hover:bg-black"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink sm:h-9 sm:w-9 text-white transition-colors hover:bg-black"
             >
               <svg className="h-3 w-3" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
                 <rect width="12" height="12" rx="2" />
@@ -199,7 +199,7 @@ export function ChatWindow({
               aria-label="Send message"
               aria-busy={isSending}
               disabled={!draft.trim() || isResetting}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal text-white transition-colors hover:bg-teal-hover disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal sm:h-9 sm:w-9 text-white transition-colors hover:bg-teal-hover disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
             >
               <svg
                 className="h-4 w-4"
