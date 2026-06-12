@@ -38,9 +38,9 @@ function MessageBubbleComponent({ message }: { message: ChatMessage }) {
           >
             <MessageBody message={message} />
           </div>
-          {message.quoteResult ? (
+          {message.bookingResult ? (
             <div className="mt-3 max-w-md">
-              <QuoteCard quote={message.quoteResult} />
+              <QuoteCard quote={message.bookingResult} />
             </div>
           ) : null}
         </div>

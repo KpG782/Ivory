@@ -1,6 +1,6 @@
 export type ChatRole = "user" | "assistant" | "system";
 
-export interface QuoteResult {
+export interface BookingResult {
   product_type?: string;
   premium?: number;
   annual_premium?: number;
@@ -15,11 +15,11 @@ export interface SessionSnapshot {
   session_id?: string;
   mode?: string;
   intent?: string;
-  quote_step?: string;
-  insurance_type?: string | null;
+  intake_step?: string;
+  service_type?: string | null;
   current_field?: string | null;
   trace_id?: string | null;
-  has_quote_result?: boolean;
+  has_booking_result?: boolean;
 }
 
 export interface ChatMessage {
@@ -27,7 +27,7 @@ export interface ChatMessage {
   role: ChatRole;
   content: string;
   streaming?: boolean;
-  quoteResult?: QuoteResult | null;
+  bookingResult?: BookingResult | null;
   kind?: "normal" | "error" | "info";
 }
 
@@ -38,7 +38,7 @@ export interface SavedChatSession {
   updatedAt: string;
   messages: ChatMessage[];
   sessionSnapshot: SessionSnapshot | null;
-  quoteResult: QuoteResult | null;
+  bookingResult: BookingResult | null;
 }
 
 export interface SseEvent {

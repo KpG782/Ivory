@@ -101,22 +101,22 @@ FIELD_SPECS: dict[str, list[dict[str, Any]]] = {
 
 
 def collect_details(state: dict[str, Any], message: str | None = None) -> dict[str, Any]:
-    insurance_type = state.get("insurance_type")
-    if insurance_type not in FIELD_SPECS:
+    service_type = state.get("service_type")
+    if service_type not in FIELD_SPECS:
         _append_assistant_message(
             state,
-            "I still need to know the insurance type before collecting quote details.",
+            "I still need to know the service type before collecting booking details.",
         )
-        state["quote_step"] = "identify"
+        state["intake_step"] = "identify"
         return state
 
-    fields = FIELD_SPECS[insurance_type]
+    fields = FIELD_SPECS[service_type]
     collected = dict(state.get("collected_data", {}))
     current_field = state.get("current_field") or _next_missing_field(fields, collected)
 
     if current_field and message and message.strip():
         try:
-            if insurance_type == "auto":
+            if service_type == "auto":
                 collected = _merge_auto_multi_field_input(collected, current_field, message)
             field_spec = _get_field_spec(fields, current_field)
             if current_field not in collected:
@@ -134,7 +134,7 @@ def collect_details(state: dict[str, Any], message: str | None = None) -> dict[s
             prompt = _field_prompt(fields, current_field)
             _append_assistant_message(state, f"{exc} {prompt}")
             state["current_field"] = current_field
-            state["quote_step"] = "collect"
+            state["intake_step"] = "collect"
             return state
 
     next_field = _next_missing_field(fields, collected)
@@ -142,17 +142,17 @@ def collect_details(state: dict[str, Any], message: str | None = None) -> dict[s
     state["mode"] = "transactional"
     if next_field:
         state["current_field"] = next_field
-        state["quote_step"] = "collect"
+        state["intake_step"] = "collect"
         _append_assistant_message(state, _field_prompt(fields, next_field))
         return state
 
     state["current_field"] = None
-    state["quote_step"] = "validate"
+    state["intake_step"] = "validate"
     return state
 
 
-def get_field_prompt(insurance_type: str, field_name: str) -> str:
-    fields = FIELD_SPECS.get(insurance_type, [])
+def get_field_prompt(service_type: str, field_name: str) -> str:
+    fields = FIELD_SPECS.get(service_type, [])
     return _field_prompt(fields, field_name)
 
 

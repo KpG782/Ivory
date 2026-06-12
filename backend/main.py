@@ -260,7 +260,7 @@ async def chat(request: Request, payload: ChatRequest) -> StreamingResponse:
             "message_complete",
             {
                 "message": assistant_message,
-                "quote_result": next_state.get("quote_result"),
+                "booking_result": next_state.get("booking_result"),
                 "session": _public_session_state(next_state),
                 "session_id": payload.session_id,
                 "trace_id": next_state.get("trace_id"),
@@ -291,11 +291,11 @@ def _public_session_state(state: ChatState) -> dict[str, Any]:
         "session_id": state.get("session_id"),
         "mode": state.get("mode"),
         "intent": state.get("intent"),
-        "quote_step": state.get("quote_step"),
-        "insurance_type": state.get("insurance_type"),
+        "intake_step": state.get("intake_step"),
+        "service_type": state.get("service_type"),
         "current_field": state.get("current_field"),
         "trace_id": state.get("trace_id"),
-        "has_quote_result": bool(state.get("quote_result")),
+        "has_booking_result": bool(state.get("booking_result")),
     }
 
 

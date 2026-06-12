@@ -10,10 +10,10 @@ class ChatState(TypedDict, total=False):
     messages: list[dict[str, str]]
     mode: str
     intent: str
-    quote_step: str
-    insurance_type: str | None
+    intake_step: str
+    service_type: str | None
     collected_data: dict[str, Any]
-    quote_result: dict[str, Any] | None
+    booking_result: dict[str, Any] | None
     pending_question: str | None
     last_error: str | None
     trace_id: str | None
@@ -30,10 +30,10 @@ def build_initial_state(session_id: str) -> ChatState:
         messages=[],
         mode="conversational",
         intent="question",
-        quote_step="identify",
-        insurance_type=None,
+        intake_step="identify",
+        service_type=None,
         collected_data={},
-        quote_result=None,
+        booking_result=None,
         pending_question=None,
         last_error=None,
         trace_id=str(uuid4()),

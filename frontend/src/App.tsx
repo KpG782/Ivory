@@ -29,11 +29,11 @@ function flowChipLabel(snapshot: SessionSnapshot | null): string | null {
     return null;
   }
 
-  const product = snapshot.insurance_type
-    ? `${snapshot.insurance_type} quote`
-    : "Quote";
-  const step = snapshot.quote_step
-    ? snapshot.quote_step.replace(/_/g, " ")
+  const product = snapshot.service_type
+    ? `${snapshot.service_type} booking`
+    : "Booking";
+  const step = snapshot.intake_step
+    ? snapshot.intake_step.replace(/_/g, " ")
     : "in progress";
   return `${product} · ${step}`;
 }
@@ -43,7 +43,7 @@ function progressFraction(snapshot: SessionSnapshot | null): number | null {
     return null;
   }
 
-  return STEP_PROGRESS[snapshot.quote_step ?? ""] ?? 0.3;
+  return STEP_PROGRESS[snapshot.intake_step ?? ""] ?? 0.3;
 }
 
 export default function App() {
@@ -284,8 +284,8 @@ export default function App() {
   const progress = progressFraction(chat.sessionSnapshot);
   const statusChip = chat.isSending
     ? "Thinking…"
-    : chat.sessionSnapshot?.has_quote_result
-      ? "Quote ready"
+    : chat.sessionSnapshot?.has_booking_result
+      ? "Booking ready"
       : chat.sessionSnapshot?.mode === "transactional"
         ? "Collecting details"
         : "Knowledge mode";
@@ -404,7 +404,7 @@ export default function App() {
           error={chat.error}
           isSending={chat.isSending}
           isResetting={chat.isResetting}
-          hasQuoteResult={Boolean(chat.sessionSnapshot?.has_quote_result)}
+          hasQuoteResult={Boolean(chat.sessionSnapshot?.has_booking_result)}
           onDraftChange={setDraft}
           onSend={submitDraft}
           onStop={chat.stopGeneration}

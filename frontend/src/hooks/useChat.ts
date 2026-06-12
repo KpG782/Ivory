@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ChatMessage,
-  QuoteResult,
+  BookingResult,
   SavedChatSession,
   SessionSnapshot
 } from "../types";
@@ -11,7 +11,7 @@ import { parseSseData, parseSseStream } from "../lib/sse";
 
 const STORAGE_KEY = "ivory-session-id";
 const SNAPSHOT_STORAGE_KEY = "ivory-session-snapshot";
-const QUOTE_STORAGE_KEY = "ivory-latest-quote";
+const BOOKING_STORAGE_KEY = "ivory-latest-booking";
 const MESSAGES_STORAGE_KEY = "ivory-current-messages";
 const HISTORY_STORAGE_KEY = "ivory-chat-history";
 const CHAT_ENDPOINT = "/api/chat";
@@ -44,7 +44,7 @@ function isSessionSnapshot(value: unknown): value is SessionSnapshot {
   return !!value && typeof value === "object";
 }
 
-function isQuoteResult(value: unknown): value is QuoteResult {
+function isBookingResult(value: unknown): value is BookingResult {
   return !!value && typeof value === "object";
 }
 
@@ -87,7 +87,7 @@ function normalizeSavedSessions(value: unknown): SavedChatSession[] {
       sessionSnapshot: isSessionSnapshot(entry.sessionSnapshot)
         ? entry.sessionSnapshot
         : null,
-      quoteResult: isQuoteResult(entry.quoteResult) ? entry.quoteResult : null
+      bookingResult: isBookingResult(entry.bookingResult) ? entry.bookingResult : null
     }));
 }
 
@@ -141,7 +141,7 @@ function extractText(payload: unknown): string | null {
   return null;
 }
 
-function looksLikeQuoteResult(value: Record<string, unknown>): value is QuoteResult {
+function looksLikeBookingResult(value: Record<string, unknown>): value is BookingResult {
   return (
     "premium" in value ||
     "annual_premium" in value ||
@@ -151,27 +151,27 @@ function looksLikeQuoteResult(value: Record<string, unknown>): value is QuoteRes
   );
 }
 
-function extractQuoteResult(payload: unknown): QuoteResult | null {
+function extractBookingResult(payload: unknown): BookingResult | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }
 
   const record = payload as Record<string, unknown>;
   const direct =
-    record.quote_result ?? record.quote ?? record.result ?? record.quoteResult;
+    record.booking_result ?? record.bookingResult;
 
   if (direct && typeof direct === "object") {
-    return direct as QuoteResult;
+    return direct as BookingResult;
   }
 
-  if (looksLikeQuoteResult(record)) {
-    return record as QuoteResult;
+  if (looksLikeBookingResult(record)) {
+    return record as BookingResult;
   }
 
   return null;
 }
 
-function summarizeQuoteResult(result: QuoteResult): string {
+function summarizeBookingResult(result: BookingResult): string {
   const premium =
     typeof result.premium === "number"
       ? result.premium
@@ -181,30 +181,30 @@ function summarizeQuoteResult(result: QuoteResult): string {
   const currency = result.currency || "USD";
   const amount =
     premium === null
-      ? "Quote calculated"
+      ? "Booking calculated"
       : new Intl.NumberFormat("en-US", {
           style: "currency",
           currency
         }).format(premium);
   const product = result.product_type
     ? String(result.product_type)
-    : "insurance";
+    : "service";
   const coverage = result.coverage_level ? ` ${String(result.coverage_level)}` : "";
 
-  return `${product}${coverage} quote ready. ${amount}.`;
+  return `${product}${coverage} booking ready. ${amount}.`;
 }
 
 function makeAssistantMessage(
   id: string,
   content = "",
-  quoteResult: QuoteResult | null = null
+  bookingResult: BookingResult | null = null
 ): ChatMessage {
   return {
     id,
     role: "assistant",
     content,
     streaming: true,
-    quoteResult
+    bookingResult
   };
 }
 
@@ -214,9 +214,9 @@ function toMessageText(data: unknown, fallback: string): string {
     return text;
   }
 
-  const quote = extractQuoteResult(data);
-  if (quote) {
-    return summarizeQuoteResult(quote);
+  const booking = extractBookingResult(data);
+  if (booking) {
+    return summarizeBookingResult(booking);
   }
 
   return fallback;
@@ -310,7 +310,7 @@ function buildSavedSession(
   sessionId: string,
   messages: ChatMessage[],
   sessionSnapshot: SessionSnapshot | null,
-  quoteResult: QuoteResult | null
+  bookingResult: BookingResult | null
 ): SavedChatSession {
   return {
     sessionId,
@@ -319,7 +319,7 @@ function buildSavedSession(
     updatedAt: new Date().toISOString(),
     messages: sanitizeMessages(messages),
     sessionSnapshot,
-    quoteResult
+    bookingResult
   };
 }
 
@@ -330,7 +330,7 @@ export function useChat() {
   const [isSending, setIsSending] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [quoteResult, setQuoteResult] = useState<QuoteResult | null>(null);
+  const [bookingResult, setBookingResult] = useState<BookingResult | null>(null);
   const [sessionSnapshot, setSessionSnapshot] = useState<SessionSnapshot | null>(null);
   const [statusText, setStatusText] = useState("Ready");
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -348,14 +348,14 @@ export function useChat() {
       current === storedSessionId ? current : storedSessionId
     );
     const storedSnapshot = readJsonStorage<unknown>(SNAPSHOT_STORAGE_KEY, null);
-    const storedQuote = readJsonStorage<unknown>(QUOTE_STORAGE_KEY, null);
+    const storedBooking = readJsonStorage<unknown>(BOOKING_STORAGE_KEY, null);
     const storedMessages = readJsonStorage<unknown>(MESSAGES_STORAGE_KEY, [
       INITIAL_WELCOME_MESSAGE
     ]);
     const storedHistory = readJsonStorage<unknown>(HISTORY_STORAGE_KEY, []);
 
     setSessionSnapshot(isSessionSnapshot(storedSnapshot) ? storedSnapshot : null);
-    setQuoteResult(isQuoteResult(storedQuote) ? storedQuote : null);
+    setBookingResult(isBookingResult(storedBooking) ? storedBooking : null);
     setMessages(normalizeMessages(storedMessages));
     setSavedSessions(normalizeSavedSessions(storedHistory));
     setHasHydrated(true);
@@ -388,10 +388,10 @@ export function useChat() {
       window.localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
     }
 
-    if (quoteResult) {
-      window.localStorage.setItem(QUOTE_STORAGE_KEY, JSON.stringify(quoteResult));
+    if (bookingResult) {
+      window.localStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(bookingResult));
     } else {
-      window.localStorage.removeItem(QUOTE_STORAGE_KEY);
+      window.localStorage.removeItem(BOOKING_STORAGE_KEY);
     }
 
     if (sessionId === INITIAL_SESSION_ID) {
@@ -402,16 +402,16 @@ export function useChat() {
       readJsonStorage<unknown>(HISTORY_STORAGE_KEY, [])
     );
 
-    const nextHistory = quoteResult && hasMeaningfulConversation(messages)
+    const nextHistory = bookingResult && hasMeaningfulConversation(messages)
       ? [
-          buildSavedSession(sessionId, messages, sessionSnapshot, quoteResult),
+          buildSavedSession(sessionId, messages, sessionSnapshot, bookingResult),
           ...existingHistory.filter((entry) => entry.sessionId !== sessionId)
         ].slice(0, 20)
       : existingHistory.filter((entry) => entry.sessionId !== sessionId).slice(0, 20);
 
     window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
     setSavedSessions(nextHistory);
-  }, [hasHydrated, messages, quoteResult, sessionId, sessionSnapshot]);
+  }, [hasHydrated, messages, bookingResult, sessionId, sessionSnapshot]);
 
   const stopGeneration = useCallback(() => {
     abortRef.current?.abort();
@@ -507,10 +507,10 @@ export function useChat() {
 
           if (event.event === "message_complete") {
             const finalText = toMessageText(payload, "");
-            const result = extractQuoteResult(payload);
+            const result = extractBookingResult(payload);
             const session = extractSessionSnapshot(payload);
             if (result) {
-              setQuoteResult(result);
+              setBookingResult(result);
             }
             if (session) {
               setSessionSnapshot(session);
@@ -520,7 +520,7 @@ export function useChat() {
               ...message,
               content: finalText || message.content,
               streaming: false,
-              quoteResult: result ?? message.quoteResult ?? null
+              bookingResult: result ?? message.bookingResult ?? null
             }));
 
             setStatusText("Ready");
@@ -613,15 +613,15 @@ export function useChat() {
           "The session has been reset. Start a new quote or ask a product question."
         )
       );
-      setQuoteResult(null);
+      setBookingResult(null);
       setSessionSnapshot({
         session_id: sessionId,
         mode: "conversational",
         intent: "question",
-        quote_step: "identify",
-        insurance_type: null,
+        intake_step: "identify",
+        service_type: null,
         current_field: null,
-        has_quote_result: false
+        has_booking_result: false
       });
       setIsResetting(false);
       setStatusText("Ready");
@@ -640,15 +640,15 @@ export function useChat() {
         "New session started. Ask a question or begin a fresh quote flow."
       )
     );
-    setQuoteResult(null);
+    setBookingResult(null);
     setSessionSnapshot({
       session_id: next,
       mode: "conversational",
       intent: "question",
-      quote_step: "identify",
-      insurance_type: null,
+      intake_step: "identify",
+      service_type: null,
       current_field: null,
-      has_quote_result: false
+      has_booking_result: false
     });
     setError(null);
     setStatusText("Ready");
@@ -658,7 +658,7 @@ export function useChat() {
     stopGeneration();
     setSessionId(saved.sessionId);
     setMessages(normalizeMessages(saved.messages));
-    setQuoteResult(isQuoteResult(saved.quoteResult) ? saved.quoteResult : null);
+    setBookingResult(isBookingResult(saved.bookingResult) ? saved.bookingResult : null);
     setSessionSnapshot(
       isSessionSnapshot(saved.sessionSnapshot) ? saved.sessionSnapshot : null
     );
@@ -674,7 +674,7 @@ export function useChat() {
     sessionId,
     sessionLabel,
     messages,
-    quoteResult,
+    bookingResult,
     sessionSnapshot,
     savedSessions,
     error,

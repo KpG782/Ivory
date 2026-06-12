@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { QuoteResult } from "../types";
+import type { BookingResult } from "../types";
 
 function formatValue(value: unknown): string {
   if (typeof value === "string") {
@@ -27,7 +27,7 @@ function formatValue(value: unknown): string {
   return "";
 }
 
-function formatCurrency(result: QuoteResult): string | null {
+function formatCurrency(result: BookingResult): string | null {
   const premium =
     typeof result.premium === "number"
       ? result.premium
@@ -52,17 +52,17 @@ function sanitizeFilePart(value: string): string {
     .replace(/^-+|-+$/g, "") || "quote";
 }
 
-function buildExportFileName(quote: QuoteResult, extension: string): string {
+function buildExportFileName(quote: BookingResult, extension: string): string {
   const product = sanitizeFilePart(String(quote.product_type || "insurance"));
   const coverage = sanitizeFilePart(String(quote.coverage_level || "quote"));
   return `ivory-${product}-${coverage}.${extension}`;
 }
 
-function toPrettyJson(quote: QuoteResult): string {
+function toPrettyJson(quote: BookingResult): string {
   return JSON.stringify(quote, null, 2);
 }
 
-function toCsv(quote: QuoteResult): string {
+function toCsv(quote: BookingResult): string {
   const rows = Object.entries(quote).map(([key, value]) => [
     key,
     Array.isArray(value)
@@ -92,7 +92,7 @@ function downloadTextFile(filename: string, content: string, type: string): void
 }
 
 interface QuoteCardProps {
-  quote: QuoteResult;
+  quote: BookingResult;
 }
 
 const PRIORITY_FIELDS = [

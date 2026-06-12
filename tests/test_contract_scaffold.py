@@ -16,10 +16,10 @@ EXPECTED_CHAT_STATE_KEYS = {
     "messages",
     "mode",
     "intent",
-    "quote_step",
-    "insurance_type",
+    "intake_step",
+    "service_type",
     "collected_data",
-    "quote_result",
+    "booking_result",
     "pending_question",
     "last_error",
     "trace_id",
@@ -27,7 +27,7 @@ EXPECTED_CHAT_STATE_KEYS = {
 
 EXPECTED_INTENTS = {"question", "quote", "response"}
 EXPECTED_MODES = {"conversational", "transactional"}
-EXPECTED_QUOTE_STEPS = {"identify", "collect", "validate", "confirm"}
+EXPECTED_INTAKE_STEPS = {"identify", "collect", "validate", "confirm"}
 EXPECTED_SSE_EVENTS = {"token", "message_complete", "error"}
 EXPECTED_ENDPOINTS = {"/chat", "/reset", "/health"}
 
@@ -44,7 +44,7 @@ def test_contract_scaffold_documents_intent_model() -> None:
 
 def test_contract_scaffold_documents_modes_and_steps() -> None:
     assert EXPECTED_MODES == {"conversational", "transactional"}
-    assert EXPECTED_QUOTE_STEPS == {"identify", "collect", "validate", "confirm"}
+    assert EXPECTED_INTAKE_STEPS == {"identify", "collect", "validate", "confirm"}
 
 
 def test_contract_scaffold_documents_public_endpoints() -> None:

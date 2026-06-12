@@ -6,11 +6,11 @@ import { QuoteCard } from "./components/QuoteCard";
 import { IvoryLogo } from "./components/IvoryLogo";
 import { useChat } from "./hooks/useChat";
 
-function formatInsuranceLabel(value: string | null | undefined): string {
+function formatServiceLabel(value: string | null | undefined): string {
   if (!value) {
-    return "Insurance";
+    return "Booking";
   }
-  return `${value.charAt(0).toUpperCase()}${value.slice(1)} Quote`;
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)} Booking`;
 }
 
 export default function QuoteConfirmationPage() {
@@ -18,13 +18,13 @@ export default function QuoteConfirmationPage() {
 
   const isConfirmationReady = useMemo(() => {
     return (
-      chat.sessionSnapshot?.quote_step === "confirm" &&
+      chat.sessionSnapshot?.intake_step === "confirm" &&
       chat.sessionSnapshot?.mode === "transactional" &&
-      !!chat.quoteResult
+      !!chat.bookingResult
     );
-  }, [chat.quoteResult, chat.sessionSnapshot]);
+  }, [chat.bookingResult, chat.sessionSnapshot]);
 
-  const pageTitle = formatInsuranceLabel(chat.sessionSnapshot?.insurance_type);
+  const pageTitle = formatServiceLabel(chat.sessionSnapshot?.service_type);
 
   return (
     <main className="min-h-screen px-3 py-4 text-[#191c1e] sm:px-4 sm:py-6 md:px-8">
@@ -108,7 +108,7 @@ export default function QuoteConfirmationPage() {
                   </div>
 
                   <div className="p-5 sm:p-6 md:p-8">
-                    {chat.quoteResult ? <QuoteCard quote={chat.quoteResult} /> : null}
+                    {chat.bookingResult ? <QuoteCard quote={chat.bookingResult} /> : null}
                   </div>
 
                   <div className="flex flex-col gap-3 px-5 pb-6 pt-2 sm:px-6 md:flex-row md:gap-4 md:px-8 md:pb-8">

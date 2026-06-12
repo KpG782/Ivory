@@ -1,6 +1,6 @@
 """Proof-of-durability test for SqliteSaver checkpointer.
 
-Verifies that session state (mode, messages, quote progress) survives
+Verifies that session state (mode, messages, intake progress) survives
 across two separate checkpointer + compiled-graph instances pointing at the
 same SQLite file — simulating a process restart.
 
@@ -51,19 +51,19 @@ def test_session_state_survives_graph_rebuild(tmp_path: Path, monkeypatch: pytes
 
     import graph
 
-    # ── Graph 1: send "I want a quote for auto insurance" ────────────────────
+    # ── Graph 1: send "I want a quote" (P2 → start_intake → identify_service prompts dental question) ─
     graph.reset_all()
     try:
-        graph.run_graph("durable-session", "I want a quote for auto insurance")
+        graph.run_graph("durable-session", "I want a quote")
 
         # ── Simulate restart: rebuild with the same db file ──────────────────
         graph.reset_all()
         state = graph.get_session_state("durable-session")
         assert state is not None, "No checkpoint found — state was not persisted"
 
-        # mode and quote progress must survive the rebuild
+        # mode and intake progress must survive the rebuild
         assert state["mode"] == "transactional", f"mode lost, got: {state.get('mode')!r}"
-        assert state["insurance_type"] == "auto", f"insurance_type lost, got: {state.get('insurance_type')!r}"
+        assert state["intake_step"] == "identify", f"intake_step lost, got: {state.get('intake_step')!r}"
         assert len(state.get("messages", [])) >= 2, "messages not persisted"
     finally:
         # Restore memory backend so subsequent tests get a clean checkpointer.
@@ -72,7 +72,7 @@ def test_session_state_survives_graph_rebuild(tmp_path: Path, monkeypatch: pytes
 
 
 def test_second_turn_uses_persisted_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """A second turn picks up where the first left off (field collection continues)."""
+    """A second turn picks up where the first left off (service selection persists)."""
     db_file = str(tmp_path / "test_sessions2.db")
 
     monkeypatch.setenv("SESSIONS_BACKEND", "sqlite")
@@ -96,20 +96,24 @@ def test_second_turn_uses_persisted_state(tmp_path: Path, monkeypatch: pytest.Mo
 
     graph.reset_all()
     try:
-        # Turn 1 on graph-1
-        graph.run_graph("multi-turn-session", "I want a quote for auto insurance")
+        # Turn 1 on graph-1: "I want a quote" → start_intake → identify_service → dental prompt
+        graph.run_graph("multi-turn-session", "I want a quote")
 
         # Simulate restart before turn 2
         graph.reset_all()
 
-        # Turn 2 on a fresh graph — vehicle year answer
-        result2 = graph.run_graph("multi-turn-session", "2019")
+        # Turn 2 on a fresh graph — "cleaning" selects the service (P5 detect_service)
+        result2 = graph.run_graph("multi-turn-session", "cleaning")
 
-        # The second turn should have stored vehicle_year
-        assert result2["collected_data"].get("vehicle_year") == 2019, (
-            f"vehicle_year not stored: {result2.get('collected_data')}"
+        # The second turn should have stored service_type == "cleaning"
+        assert result2["service_type"] == "cleaning", (
+            f"service_type not stored: {result2.get('service_type')!r}"
         )
-        assert result2["current_field"] == "vehicle_make"
+        # intake_step may bounce back to identify (collect_details finds no FIELD_SPECS for dental
+        # yet — Task 5 adds them); don't assert on specific step or message text here.
+        assert result2["mode"] == "transactional", (
+            f"mode not transactional: {result2.get('mode')!r}"
+        )
     finally:
         monkeypatch.setenv("SESSIONS_BACKEND", "memory")
         graph.reset_all()
