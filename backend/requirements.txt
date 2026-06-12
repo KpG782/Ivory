@@ -1,6 +1,7 @@
 chromadb>=0.5.11
 fastapi>=0.115.0
 langgraph>=0.2.56
+langgraph-checkpoint-sqlite>=2.0.0
 pydantic>=2.9.2
 python-dotenv>=1.0.0
 redis>=5.0.0

@@ -46,6 +46,7 @@ Thumbs.db
 backend/vectorstore/
 vectorstore/
 chroma_data/
+backend/sessions.db
 
 # Docker
 docker-compose.override.yml

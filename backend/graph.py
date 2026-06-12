@@ -15,10 +15,10 @@ result. There is no separate hand-rolled session store anymore.
 
 from __future__ import annotations
 
+import os
 from typing import Literal
 from uuid import uuid4
 
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from nodes.collect_details import collect_details, get_field_prompt
@@ -188,7 +188,24 @@ def _build_graph() -> StateGraph:
 
 # ── Compiled graph + durable session API ────────────────────────────────────
 
-_checkpointer = MemorySaver()
+_DEFAULT_SESSIONS_DB = os.path.join(os.path.dirname(__file__), "sessions.db")
+
+
+def _make_checkpointer():
+    if os.environ.get("SESSIONS_BACKEND", "sqlite") == "memory":
+        from langgraph.checkpoint.memory import MemorySaver
+
+        return MemorySaver()
+    import sqlite3
+
+    from langgraph.checkpoint.sqlite import SqliteSaver
+
+    db_path = os.environ.get("SESSIONS_DB_PATH", _DEFAULT_SESSIONS_DB)
+    conn = sqlite3.connect(db_path, check_same_thread=False)
+    return SqliteSaver(conn)
+
+
+_checkpointer = _make_checkpointer()
 COMPILED_GRAPH = _build_graph().compile(checkpointer=_checkpointer)
 _THREAD_IDS: set[str] = set()
 
@@ -236,7 +253,7 @@ def set_session_state(session_id: str, state: ChatState) -> None:
 def reset_all() -> None:
     """Drop all sessions by replacing the checkpointer. Used by the test suite."""
     global COMPILED_GRAPH, _checkpointer, _THREAD_IDS
-    _checkpointer = MemorySaver()
+    _checkpointer = _make_checkpointer()
     COMPILED_GRAPH = _build_graph().compile(checkpointer=_checkpointer)
     _THREAD_IDS = set()
 
