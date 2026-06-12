@@ -125,46 +125,17 @@ def test_rag_fallback_returns_clean_direct_answer_without_llm(client: TestClient
     assert "based on the knowledge base" not in message
 
 
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_auto_quote_flow_returns_quote_result(client: TestClient) -> None:
-    session_id = "quote-session"
+@pytest.mark.skip(reason="migrating to dental in task 6")
+def test_dental_booking_flow_returns_booking_result(client: TestClient) -> None:
+    """Full dental booking flow: cleaning → 5 fields → validate → confirm."""
+    session_id = "dental-booking-session"
     prompts = [
-        "I want a quote for auto insurance",
-        "2019",
-        "Toyota",
-        "Camry",
-        "35",
-        "0",
-        "standard",
-    ]
-
-    final_events: list[dict[str, Any]] = []
-    for message in prompts:
-        response = client.post("/chat", json={"session_id": session_id, "message": message})
-        assert response.status_code == 200
-        final_events = _parse_sse_body(response.text)
-
-    assert final_events[-1]["event"] == "message_complete"
-    payload = final_events[-1]["data"]
-    assert payload["booking_result"]["product_type"] == "auto"
-    assert payload["booking_result"]["coverage_level"] == "standard"
-    assert payload["booking_result"]["premium"] > 0
-    assert "estimated auto premium" in payload["message"].lower()
-    assert payload["session"]["mode"] == "transactional"
-    assert payload["session"]["intake_step"] == "confirm"
-    assert payload["session"]["has_booking_result"] is True
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_home_quote_flow_returns_quote_result(client: TestClient) -> None:
-    session_id = "home-quote-session"
-    prompts = [
-        "I want a quote for home insurance",
-        "house",
-        "Austin",
-        "350000",
-        "2005",
-        "comprehensive",
+        "I'd like to book a cleaning",
+        "Maria Santos",
+        "9175550144",
+        "maria@example.com",
+        "new",
+        "Wednesday 2:30 PM",
     ]
 
     final_events: list[dict[str, Any]] = []
@@ -172,79 +143,32 @@ def test_home_quote_flow_returns_quote_result(client: TestClient) -> None:
         final_events = _post_chat(client, session_id, message)
 
     payload = final_events[-1]["data"]
-    assert payload["booking_result"]["product_type"] == "home"
-    assert payload["booking_result"]["coverage_level"] == "comprehensive"
-    assert payload["booking_result"]["premium"] > 0
     assert payload["session"]["intake_step"] == "confirm"
+    assert payload["session"]["service_type"] == "cleaning"
 
 
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_life_quote_flow_returns_quote_result(client: TestClient) -> None:
-    session_id = "life-quote-session"
+@pytest.mark.skip(reason="migrating to dental in task 6")
+def test_adjust_reopens_collection_from_first_field(client: TestClient) -> None:
+    """After completing all fields + validating, 'adjust' restarts collection."""
+    session_id = "adjust-session"
     prompts = [
-        "I want a quote for life insurance",
-        "42",
-        "good",
-        "no",
-        "500000",
-        "20",
-        "standard",
+        "I'd like to book a cleaning",
+        "Maria Santos",
+        "9175550144",
+        "maria@example.com",
+        "new",
+        "Wednesday 2:30 PM",
     ]
-
-    final_events: list[dict[str, Any]] = []
     for message in prompts:
-        final_events = _post_chat(client, session_id, message)
+        _post_chat(client, session_id, message)
 
-    payload = final_events[-1]["data"]
-    assert payload["booking_result"]["product_type"] == "life"
-    assert payload["booking_result"]["coverage_level"] == "standard"
-    assert payload["booking_result"]["premium"] > 0
-    assert payload["session"]["intake_step"] == "confirm"
+    events = _post_chat(client, session_id, "adjust")
+    message = events[-1]["data"]["message"]
 
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_mid_flow_question_preserves_quote_progress(client: TestClient) -> None:
-    session_id = "interrupt-session"
-
-    start_response = client.post(
-        "/chat",
-        json={"session_id": session_id, "message": "I want a quote for auto insurance"},
-    )
-    start_events = _parse_sse_body(start_response.text)
-    assert start_events[-1]["data"]["message"] == "What year is the vehicle? (e.g. 2019)"
-
-    question_response = client.post(
-        "/chat",
-        json={"session_id": session_id, "message": "What does comprehensive cover?"},
-    )
-    question_events = _parse_sse_body(question_response.text)
-    question_message = question_events[-1]["data"]["message"]
-
-    assert "comprehensive coverage" in question_message.lower()
-    assert "what year is the vehicle?" in question_message.lower()
-    assert main.SESSION_STORE[session_id]["current_field"] == "vehicle_year"
-    assert question_events[-1]["data"]["session"]["intake_step"] == "collect"
-
-    resume_response = client.post(
-        "/chat",
-        json={"session_id": session_id, "message": "2019"},
-    )
-    resume_events = _parse_sse_body(resume_response.text)
-
-    assert resume_events[-1]["data"]["message"] == "What is the vehicle make? (e.g. Toyota)"
-    assert main.SESSION_STORE[session_id]["collected_data"]["vehicle_year"] == 2019
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_numeric_field_reply_stays_in_quote_flow(client: TestClient) -> None:
-    """A bare value like "2019" is always stored as the field, never re-routed."""
-    session_id = "numeric-field-session"
-
-    _post_chat(client, session_id, "I want a quote for auto insurance")
-    events = _post_chat(client, session_id, "2019")
-
-    assert events[-1]["data"]["message"] == "What is the vehicle make? (e.g. Toyota)"
-    assert main.SESSION_STORE[session_id]["collected_data"]["vehicle_year"] == 2019
+    assert "may i have your full name" in message.lower()
+    assert main.SESSION_STORE[session_id]["booking_result"] is None
+    assert main.SESSION_STORE[session_id]["current_field"] == "patient_name"
+    assert main.SESSION_STORE[session_id]["collected_data"] == {}
 
 
 def test_explicit_quote_request_starts_collection(client: TestClient) -> None:
@@ -258,229 +182,105 @@ def test_explicit_quote_request_starts_collection(client: TestClient) -> None:
     assert payload["session"]["service_type"] is None
 
 
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_comma_separated_auto_details_fill_multiple_fields(client: TestClient) -> None:
-    session_id = "comma-separated-auto-session"
+def test_numeric_field_reply_stays_in_quote_flow(client: TestClient) -> None:
+    """A phone number is stored as the phone field and advances to email."""
+    session_id = "numeric-field-session"
 
-    _post_chat(client, session_id, "I want a quote for auto insurance")
-    _post_chat(client, session_id, "2019")
-    events = _post_chat(client, session_id, "Toyota, Camry, 35, 0, standard")
+    _post_chat(client, session_id, "I'd like to book a cleaning")
+    _post_chat(client, session_id, "Maria Santos")
+    events = _post_chat(client, session_id, "(917) 555-0144")
 
     payload = events[-1]["data"]
-    assert "estimated auto premium" in payload["message"].lower()
-    assert payload["booking_result"]["product_type"] == "auto"
-    assert payload["booking_result"]["coverage_level"] == "standard"
-
-    state = main.SESSION_STORE[session_id]
-    assert state["collected_data"]["vehicle_make"] == "Toyota"
-    assert state["collected_data"]["vehicle_model"] == "Camry"
-    assert state["collected_data"]["driver_age"] == 35
-    assert state["collected_data"]["accidents_last_5yr"] == 0
+    assert "and your email for the confirmation" in payload["message"].lower()
+    assert main.SESSION_STORE[session_id]["collected_data"]["phone"] == "9175550144"
 
 
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
+def test_invalid_numeric_input_reprompts_without_advancing(client: TestClient) -> None:
+    """An invalid phone number is rejected; current_field stays 'phone'."""
+    session_id = "invalid-numeric-session"
+
+    _post_chat(client, session_id, "I'd like to book a cleaning")
+    _post_chat(client, session_id, "Maria Santos")
+    events = _post_chat(client, session_id, "abc")
+
+    message = events[-1]["data"]["message"].lower()
+    assert "phone number" in message
+    assert "area code" in message
+    assert main.SESSION_STORE[session_id]["current_field"] == "phone"
+    assert "phone" not in main.SESSION_STORE[session_id]["collected_data"]
+
+
+def test_invalid_enum_input_reprompts_without_advancing(client: TestClient) -> None:
+    """An invalid patient_status is rejected; allowed values are mentioned."""
+    session_id = "invalid-enum-session"
+    prompts = [
+        "I'd like to book a cleaning",
+        "Maria Santos",
+        "9175550144",
+        "maria@example.com",
+    ]
+    for message in prompts:
+        _post_chat(client, session_id, message)
+
+    events = _post_chat(client, session_id, "platinum")
+    message = events[-1]["data"]["message"].lower()
+
+    assert "please choose one of" in message
+    assert "new" in message
+    assert "returning" in message
+    assert main.SESSION_STORE[session_id]["current_field"] == "patient_status"
+
+
+def test_mid_flow_question_preserves_quote_progress(client: TestClient) -> None:
+    """A '?' question mid-intake is answered, then the same field is re-asked."""
+    session_id = "interrupt-session"
+
+    start_events = _post_chat(client, session_id, "I'd like to book a cleaning")
+    assert "may i have your full name" in start_events[-1]["data"]["message"].lower()
+
+    question_events = _post_chat(client, session_id, "do you take walk-ins?")
+    question_message = question_events[-1]["data"]["message"]
+
+    # RAG answers, then re-asks the paused field (patient_name)
+    assert "comprehensive coverage" in question_message.lower()
+    assert "may i have your full name" in question_message.lower()
+    assert main.SESSION_STORE[session_id]["current_field"] == "patient_name"
+    assert question_events[-1]["data"]["session"]["intake_step"] == "collect"
+
+    resume_events = _post_chat(client, session_id, "Maria Santos")
+    assert "what's the best phone number" in resume_events[-1]["data"]["message"].lower()
+    assert main.SESSION_STORE[session_id]["collected_data"]["patient_name"] == "Maria Santos"
+
+
 def test_mid_quote_question_answers_then_resumes_same_field(client: TestClient) -> None:
+    """A '?' question while collecting re-asks the same paused field."""
     session_id = "mid-quote-question-session"
 
-    _post_chat(client, session_id, "I want a quote for auto insurance")
+    _post_chat(client, session_id, "I'd like to book a cleaning")
 
     events = _post_chat(client, session_id, "What does comprehensive coverage include?")
     payload = events[-1]["data"]
 
     assert "comprehensive coverage" in payload["message"].lower()
-    assert "what year is the vehicle?" in payload["message"].lower()
+    assert "may i have your full name" in payload["message"].lower()
     assert payload["session"]["mode"] == "transactional"
     assert payload["session"]["intake_step"] == "collect"
 
 
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_invalid_numeric_input_reprompts_without_advancing(client: TestClient) -> None:
-    session_id = "invalid-numeric-session"
+def test_switching_product_mid_flow_resets_to_new_product(client: TestClient) -> None:
+    """Switching service mid-flow resets collected_data and restarts collection."""
+    session_id = "switch-product-session"
 
-    _post_chat(client, session_id, "I want a quote for auto insurance")
-    events = _post_chat(client, session_id, "abc")
+    _post_chat(client, session_id, "I'd like to book a cleaning")
+    _post_chat(client, session_id, "Maria Santos")
+    events = _post_chat(client, session_id, "actually book a whitening instead")
 
-    message = events[-1]["data"]["message"].lower()
-    assert "whole number" in message
-    assert "what year is the vehicle?" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "vehicle_year"
-    assert "vehicle_year" not in main.SESSION_STORE[session_id]["collected_data"]
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_future_vehicle_year_is_rejected_immediately(client: TestClient) -> None:
-    session_id = "future-year-session"
-
-    _post_chat(client, session_id, "I want a quote for auto insurance")
-    events = _post_chat(client, session_id, "2035")
-
-    message = events[-1]["data"]["message"]
-    assert "vehicle year must be between 1901" in message.lower()
-    assert main.SESSION_STORE[session_id]["intake_step"] == "collect"
-    assert main.SESSION_STORE[session_id]["current_field"] == "vehicle_year"
-    assert "vehicle_year" not in main.SESSION_STORE[session_id]["collected_data"]
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_invalid_enum_input_reprompts_without_advancing(client: TestClient) -> None:
-    session_id = "invalid-enum-session"
-    prompts = [
-        "I want a quote for home insurance",
-        "house",
-        "Austin",
-        "350000",
-        "2005",
-    ]
-    for message in prompts:
-        _post_chat(client, session_id, message)
-
-    events = _post_chat(client, session_id, "premium-plus")
-    message = events[-1]["data"]["message"].lower()
-
-    assert "please choose one of" in message
-    assert "basic, standard, or comprehensive" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "coverage_level"
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_negative_accident_count_is_rejected_before_quote_generation(client: TestClient) -> None:
-    session_id = "negative-accidents-session"
-    prompts = [
-        "I want a quote for auto insurance",
-        "2019",
-        "Toyota",
-        "Camry",
-        "35",
-    ]
-    for message in prompts:
-        _post_chat(client, session_id, message)
-
-    events = _post_chat(client, session_id, "-1")
-    message = events[-1]["data"]["message"].lower()
-
-    assert "realistic accident count between 0 and 10" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "accidents_last_5yr"
-    assert "accidents_last_5yr" not in main.SESSION_STORE[session_id]["collected_data"]
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_off_topic_text_for_string_field_is_rejected(client: TestClient) -> None:
-    session_id = "off-topic-session"
-
-    _post_chat(client, session_id, "I want a quote for home insurance")
-    _post_chat(client, session_id, "house")
-    events = _post_chat(client, session_id, "i like dogs")
-
-    message = events[-1]["data"]["message"].lower()
-    assert "city or location" in message or "real city or location" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "location"
-    assert "location" not in main.SESSION_STORE[session_id]["collected_data"]
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_policy_question_in_string_field_is_rejected_without_advancing(client: TestClient) -> None:
-    session_id = "policy-question-string-session"
-
-    _post_chat(client, session_id, "I want a quote for home insurance")
-    _post_chat(client, session_id, "house")
-    events = _post_chat(client, session_id, "what insurance products do you offer")
-
-    message = events[-1]["data"]["message"].lower()
-    assert "requested detail" in message or "policy question" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "location"
-    assert "location" not in main.SESSION_STORE[session_id]["collected_data"]
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_zero_property_value_is_rejected_immediately(client: TestClient) -> None:
-    session_id = "zero-property-value-session"
-    prompts = [
-        "I want a quote for home insurance",
-        "house",
-        "Austin",
-    ]
-    for message in prompts:
-        _post_chat(client, session_id, message)
-
-    events = _post_chat(client, session_id, "0")
-    message = events[-1]["data"]["message"].lower()
-
-    assert "more realistic property value" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "estimated_value"
-    assert "estimated_value" not in main.SESSION_STORE[session_id]["collected_data"]
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_low_property_value_is_rejected_immediately(client: TestClient) -> None:
-    session_id = "low-property-value-session"
-    prompts = [
-        "I want a quote for home insurance",
-        "house",
-        "Austin",
-    ]
-    for message in prompts:
-        _post_chat(client, session_id, message)
-
-    events = _post_chat(client, session_id, "100")
-    message = events[-1]["data"]["message"].lower()
-
-    assert "more realistic property value" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "estimated_value"
-    assert "estimated_value" not in main.SESSION_STORE[session_id]["collected_data"]
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_zoo_is_rejected_as_location(client: TestClient) -> None:
-    session_id = "zoo-location-session"
-
-    _post_chat(client, session_id, "I want a quote for home insurance")
-    _post_chat(client, session_id, "house")
-    events = _post_chat(client, session_id, "zoo")
-
-    message = events[-1]["data"]["message"].lower()
-    assert "real city or location" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "location"
-    assert "location" not in main.SESSION_STORE[session_id]["collected_data"]
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_invalid_boolean_input_is_rejected_for_life_smoker_field(client: TestClient) -> None:
-    session_id = "invalid-bool-session"
-    prompts = [
-        "I want a quote for life insurance",
-        "42",
-        "good",
-    ]
-    for message in prompts:
-        _post_chat(client, session_id, message)
-
-    events = _post_chat(client, session_id, "sometimes")
-    message = events[-1]["data"]["message"].lower()
-
-    assert "please reply yes or no" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "smoker"
-    assert "smoker" not in main.SESSION_STORE[session_id]["collected_data"]
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_invalid_term_length_is_rejected_for_life_quote(client: TestClient) -> None:
-    session_id = "invalid-term-session"
-    prompts = [
-        "I want a quote for life insurance",
-        "42",
-        "good",
-        "no",
-        "500000",
-    ]
-    for message in prompts:
-        _post_chat(client, session_id, message)
-
-    events = _post_chat(client, session_id, "15")
-    message = events[-1]["data"]["message"].lower()
-
-    assert "please choose one of: 10, 20, 30" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "term_years"
-    assert "term_years" not in main.SESSION_STORE[session_id]["collected_data"]
+    payload = events[-1]["data"]
+    assert "may i have your full name" in payload["message"].lower()
+    state = main.SESSION_STORE[session_id]
+    assert state["service_type"] == "whitening"
+    assert state["current_field"] == "patient_name"
+    assert state["collected_data"] == {}
 
 
 def test_quote_flow_starts_in_identify_mode_instead_of_rag(client: TestClient) -> None:
@@ -496,121 +296,6 @@ def test_quote_flow_starts_in_identify_mode_instead_of_rag(client: TestClient) -
     assert payload["session"]["service_type"] is None
 
 
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_home_product_selection_advances_to_first_field(client: TestClient) -> None:
-    session_id = "home-product-selection-session"
-
-    _post_chat(client, session_id, "I want a quote")
-    events = _post_chat(client, session_id, "home")
-
-    payload = events[-1]["data"]
-    assert payload["message"] == "Is the property a house, condo, or apartment?"
-    assert payload["session"]["mode"] == "transactional"
-    assert payload["session"]["intake_step"] == "collect"
-    assert payload["session"]["service_type"] == "home"
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_motor_alias_selects_auto_quote_product(client: TestClient) -> None:
-    session_id = "motor-product-selection-session"
-
-    _post_chat(client, session_id, "I want a quote")
-    events = _post_chat(client, session_id, "motor")
-
-    payload = events[-1]["data"]
-    assert payload["message"] == "What year is the vehicle? (e.g. 2019)"
-    assert payload["session"]["mode"] == "transactional"
-    assert payload["session"]["intake_step"] == "collect"
-    assert payload["session"]["service_type"] == "auto"
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_invalid_text_reply_during_numeric_auto_field_does_not_leave_quote_flow(client: TestClient) -> None:
-    session_id = "invalid-text-auto-field-session"
-
-    _post_chat(client, session_id, "I want a quote for auto insurance")
-    first_retry = _post_chat(client, session_id, "motor")
-    second_retry = _post_chat(client, session_id, "yes continue")
-
-    first_message = first_retry[-1]["data"]["message"].lower()
-    second_message = second_retry[-1]["data"]["message"].lower()
-
-    assert "please enter a whole number" in first_message
-    assert "what year is the vehicle?" in first_message
-    assert "please enter a whole number" in second_message
-    assert "what year is the vehicle?" in second_message
-    assert main.SESSION_STORE[session_id]["intake_step"] == "collect"
-    assert main.SESSION_STORE[session_id]["current_field"] == "vehicle_year"
-    assert main.SESSION_STORE[session_id]["service_type"] == "auto"
-    assert main.SESSION_STORE[session_id]["collected_data"] == {}
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_invalid_year_built_does_not_advance_to_coverage_level(client: TestClient) -> None:
-    session_id = "invalid-year-built-session"
-    prompts = [
-        "I want a quote for home insurance",
-        "house",
-        "Makati",
-        "350000",
-    ]
-    for message in prompts:
-        _post_chat(client, session_id, message)
-
-    events = _post_chat(client, session_id, "100")
-    message = events[-1]["data"]["message"].lower()
-
-    assert "year built must be between 1801" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "year_built"
-    assert main.SESSION_STORE[session_id]["intake_step"] == "collect"
-    assert "year_built" not in main.SESSION_STORE[session_id]["collected_data"]
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_adjust_reopens_collection_from_first_field(client: TestClient) -> None:
-    session_id = "adjust-session"
-    prompts = [
-        "I want a quote for auto insurance",
-        "2019",
-        "Toyota",
-        "Camry",
-        "35",
-        "0",
-        "standard",
-    ]
-    for message in prompts:
-        _post_chat(client, session_id, message)
-
-    events = _post_chat(client, session_id, "adjust")
-    message = events[-1]["data"]["message"]
-
-    assert message == "What year is the vehicle? (e.g. 2019)"
-    assert main.SESSION_STORE[session_id]["booking_result"] is None
-    assert main.SESSION_STORE[session_id]["current_field"] == "vehicle_year"
-    assert main.SESSION_STORE[session_id]["collected_data"] == {}
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_implausible_accident_count_is_rejected_before_quote_generation(client: TestClient) -> None:
-    session_id = "implausible-accidents-session"
-    prompts = [
-        "I want a quote for auto insurance",
-        "2019",
-        "Toyota",
-        "Camry",
-        "29",
-    ]
-    for message in prompts:
-        _post_chat(client, session_id, message)
-
-    events = _post_chat(client, session_id, "24")
-    message = events[-1]["data"]["message"].lower()
-
-    assert "realistic accident count between 0 and 10" in message
-    assert main.SESSION_STORE[session_id]["current_field"] == "accidents_last_5yr"
-    assert "accidents_last_5yr" not in main.SESSION_STORE[session_id]["collected_data"]
-
-
 def test_restart_during_confirm_resets_product_selection(client: TestClient) -> None:
     session_id = "restart-confirm-session"
 
@@ -624,21 +309,6 @@ def test_restart_during_confirm_resets_product_selection(client: TestClient) -> 
     assert payload["session"]["intake_step"] == "identify"
     assert payload["session"]["service_type"] is None
     assert payload["session"]["has_booking_result"] is False
-
-
-@pytest.mark.skip(reason="migrating to dental in tasks 4-6")
-def test_switching_product_mid_flow_resets_to_new_product(client: TestClient) -> None:
-    session_id = "switch-product-session"
-
-    _post_chat(client, session_id, "I want a quote for auto insurance")
-    _post_chat(client, session_id, "2019")
-    events = _post_chat(client, session_id, "I want a quote for home insurance")
-
-    assert events[-1]["data"]["message"] == "Is the property a house, condo, or apartment?"
-    state = main.SESSION_STORE[session_id]
-    assert state["service_type"] == "home"
-    assert state["current_field"] == "property_type"
-    assert state["collected_data"] == {}
 
 
 # ── Deterministic re-architecture: durable memory, RAG history, pure routing ──

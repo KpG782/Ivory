@@ -1,103 +1,114 @@
 from __future__ import annotations
 
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-CURRENT_YEAR = datetime.now(UTC).year
-LOCATION_DENYLIST = {
-    "zoo",
-    "dog",
-    "dogs",
-    "cat",
-    "cats",
-    "apple",
-    "banana",
+from services.catalog import SERVICES
+
+# ---------------------------------------------------------------------------
+# Dental intake field definitions
+# ---------------------------------------------------------------------------
+
+INTAKE_FIELDS = [
+    {"name": "patient_name",   "prompt": "May I have your full name?",                                              "type": "str",   "min_length": 2},
+    {"name": "phone",          "prompt": "What's the best phone number to reach you?",                              "type": "phone"},
+    {"name": "email",          "prompt": "And your email for the confirmation?",                                    "type": "email"},
+    {"name": "patient_status", "prompt": "Are you a new or returning patient?",                                     "type": "str",   "allowed": ["new", "returning"]},
+    {"name": "preferred_slot", "prompt": "What day and time work best? (e.g. 'Wednesday 2:30 PM')",                 "type": "slot"},
+]
+
+# One shared schema for all services — keeps the per-service lookup code working.
+FIELD_SPECS: dict[str, list[dict[str, Any]]] = {s: INTAKE_FIELDS for s in SERVICES}
+
+# ---------------------------------------------------------------------------
+# Slot parsing
+# ---------------------------------------------------------------------------
+
+_WEEKDAY_NAMES: dict[str, int] = {
+    "monday": 0,    "mon": 0,
+    "tuesday": 1,   "tue": 1,
+    "wednesday": 2, "wed": 2,
+    "thursday": 3,  "thu": 3,
+    "friday": 4,    "fri": 4,
+    "saturday": 5,  "sat": 5,
+    "sunday": 6,    "sun": 6,
 }
 
-FIELD_SPECS: dict[str, list[dict[str, Any]]] = {
-    "auto": [
-        {
-            "name": "vehicle_year",
-            "prompt": "What year is the vehicle? (e.g. 2019)",
-            "type": "int",
-            "min_value": 1901,
-            "max_value": CURRENT_YEAR,
-        },
-        {"name": "vehicle_make", "prompt": "What is the vehicle make? (e.g. Toyota)", "type": "str", "min_length": 2},
-        {"name": "vehicle_model", "prompt": "What is the vehicle model? (e.g. Camry)", "type": "str", "min_length": 2},
-        {"name": "driver_age", "prompt": "How old is the primary driver?", "type": "int", "min_value": 16, "max_value": 120},
-        {
-            "name": "accidents_last_5yr",
-            "prompt": "How many accidents has the driver had in the last 5 years?",
-            "type": "int",
-            "min_value": 0,
-            "max_value": 10,
-        },
-        {
-            "name": "coverage_level",
-            "prompt": "Which coverage level do you want: basic, standard, or comprehensive?",
-            "type": "str",
-            "allowed": ["basic", "standard", "comprehensive"],
-        },
-    ],
-    "home": [
-        {
-            "name": "property_type",
-            "prompt": "Is the property a house, condo, or apartment?",
-            "type": "str",
-            "allowed": ["house", "condo", "apartment"],
-        },
-        {
-            "name": "location",
-            "prompt": "Which city or location is the property in?",
-            "type": "str",
-            "min_length": 2,
-        },
-        {
-            "name": "estimated_value",
-            "prompt": "What is the estimated property value in USD? (e.g. 350000)",
-            "type": "float",
-            "min_value": 10000,
-        },
-        {
-            "name": "year_built",
-            "prompt": "What year was the property built?",
-            "type": "int",
-            "min_value": 1801,
-            "max_value": CURRENT_YEAR,
-        },
-        {
-            "name": "coverage_level",
-            "prompt": "Which coverage level do you want: basic, standard, or comprehensive?",
-            "type": "str",
-            "allowed": ["basic", "standard", "comprehensive"],
-        },
-    ],
-    "life": [
-        {"name": "age", "prompt": "How old is the insured person?", "type": "int", "min_value": 18, "max_value": 85},
-        {
-            "name": "health_status",
-            "prompt": "How would you describe health status: excellent, good, fair, or poor?",
-            "type": "str",
-            "allowed": ["excellent", "good", "fair", "poor"],
-        },
-        {"name": "smoker", "prompt": "Is the insured a smoker? Reply yes or no.", "type": "bool"},
-        {
-            "name": "coverage_amount",
-            "prompt": "What coverage amount do you want in USD? (e.g. 500000)",
-            "type": "float",
-            "min_value": 1,
-        },
-        {"name": "term_years", "prompt": "Which term length do you want: 10, 20, or 30 years?", "type": "int", "allowed": [10, 20, 30]},
-        {
-            "name": "coverage_level",
-            "prompt": "Which coverage level do you want: basic, standard, or comprehensive?",
-            "type": "str",
-            "allowed": ["basic", "standard", "comprehensive"],
-        },
-    ],
-}
+_SLOT_PATTERN = re.compile(
+    r"\b(?P<day>monday|tuesday|wednesday|thursday|friday|saturday|sunday"
+    r"|mon|tue|wed|thu|fri|sat|sun)\b"
+    r"[\s,]+(?:at\s+)?(?P<hour>\d{1,2})(?::(?P<minute>\d{2}))?\s*(?P<ampm>am|pm)\b",
+    re.IGNORECASE,
+)
+
+
+def parse_slot_phrase(value: str) -> datetime | None:
+    """Parse a natural-language slot phrase into the next strictly-future UTC datetime.
+
+    Accepts formats like "Wednesday 2:30 PM" or "wed 2pm" (weekday + hour[:minute] am/pm).
+    Returns a timezone-aware UTC datetime, or None if the phrase cannot be parsed.
+
+    The returned datetime is the next occurrence of that weekday/time that is strictly
+    in the future (UTC). If the requested weekday is today but the time has already
+    passed, the next-week occurrence is returned instead.
+    """
+    m = _SLOT_PATTERN.search(value.strip())
+    if not m:
+        return None
+
+    day_str = m.group("day").lower()
+    raw_hour = int(m.group("hour"))
+    minute = int(m.group("minute")) if m.group("minute") else 0
+    ampm = m.group("ampm").lower()
+
+    # Validate raw values before 24-hour conversion to avoid leaking
+    # Python's "hour must be in 0..23" ValueError to the user.
+    if not (1 <= raw_hour <= 12):
+        return None
+    if not (0 <= minute <= 59):
+        return None
+
+    # Convert to 24-hour
+    hour = raw_hour
+    if ampm == "am":
+        if hour == 12:
+            hour = 0
+    else:  # pm
+        if hour != 12:
+            hour += 12
+
+    target_weekday = _WEEKDAY_NAMES[day_str]
+
+    now_utc = datetime.now(UTC)
+    today_weekday = now_utc.weekday()
+
+    # Days until the next occurrence of target_weekday
+    days_ahead = (target_weekday - today_weekday) % 7
+
+    # Build a candidate datetime on that date at the given time (UTC-naive for arithmetic,
+    # then we attach UTC)
+    candidate_date = (now_utc + timedelta(days=days_ahead)).date()
+    candidate = datetime(
+        candidate_date.year,
+        candidate_date.month,
+        candidate_date.day,
+        hour,
+        minute,
+        0,
+        tzinfo=UTC,
+    )
+
+    # Must be strictly future; if same-day and time already passed, push one week ahead.
+    if candidate <= now_utc:
+        candidate += timedelta(weeks=1)
+
+    return candidate
+
+
+# ---------------------------------------------------------------------------
+# Public node
+# ---------------------------------------------------------------------------
 
 
 def collect_details(state: dict[str, Any], message: str | None = None) -> dict[str, Any]:
@@ -105,7 +116,7 @@ def collect_details(state: dict[str, Any], message: str | None = None) -> dict[s
     if service_type not in FIELD_SPECS:
         _append_assistant_message(
             state,
-            "I still need to know the service type before collecting booking details.",
+            "I still need to know which service you'd like to book before collecting your details.",
         )
         state["intake_step"] = "identify"
         return state
@@ -116,8 +127,6 @@ def collect_details(state: dict[str, Any], message: str | None = None) -> dict[s
 
     if current_field and message and message.strip():
         try:
-            if service_type == "auto":
-                collected = _merge_auto_multi_field_input(collected, current_field, message)
             field_spec = _get_field_spec(fields, current_field)
             if current_field not in collected:
                 collected[current_field] = _coerce_value(
@@ -156,114 +165,9 @@ def get_field_prompt(service_type: str, field_name: str) -> str:
     return _field_prompt(fields, field_name)
 
 
-def _merge_auto_multi_field_input(
-    collected: dict[str, Any],
-    current_field: str,
-    raw: str,
-) -> dict[str, Any]:
-    next_collected = dict(collected)
-    lowered = raw.lower()
-    compact = re.sub(r"\s+", " ", raw).strip()
-    fields = FIELD_SPECS["auto"]
-
-    parsed_sequential = _merge_auto_sequential_input(fields, next_collected, current_field, raw)
-    if parsed_sequential is not None:
-        next_collected = parsed_sequential
-
-    if current_field == "vehicle_year":
-        year_match = re.search(r"\b(19\d{2}|20\d{2})\b", compact)
-        coverage_match = re.search(r"\b(basic|standard|comprehensive)\b", lowered)
-        if coverage_match:
-            next_collected.setdefault("coverage_level", coverage_match.group(1))
-
-        remainder = compact
-        if year_match:
-            remainder = re.sub(r"\b(19\d{2}|20\d{2})\b", "", remainder, count=1).strip()
-        remainder = re.sub(r"\bmodel\b", "", remainder, flags=re.IGNORECASE).strip()
-        if coverage_match:
-            remainder = re.sub(
-                r"\b(basic|standard|comprehensive)\b",
-                "",
-                remainder,
-                count=1,
-                flags=re.IGNORECASE,
-            ).strip()
-
-        parts = [part for part in remainder.split() if part]
-        if parts:
-            next_collected.setdefault("vehicle_make", parts[0].title())
-        if len(parts) >= 2:
-            next_collected.setdefault("vehicle_model", " ".join(parts[1:]).title())
-
-    elif current_field == "vehicle_make":
-        cleaned = re.sub(r"\b(19\d{2}|20\d{2})\b", "", compact).strip()
-        cleaned = re.sub(r"\bmodel\b", "", cleaned, flags=re.IGNORECASE).strip()
-        parts = [part for part in cleaned.split() if part]
-        if parts:
-            next_collected.setdefault("vehicle_make", parts[0].title())
-        if len(parts) >= 2:
-            next_collected.setdefault("vehicle_model", " ".join(parts[1:]).title())
-
-    elif current_field == "vehicle_model":
-        cleaned = re.sub(r"\b(19\d{2}|20\d{2})\b", "", compact).strip()
-        cleaned = re.sub(r"\bmodel\b", "", cleaned, flags=re.IGNORECASE).strip()
-        if next_collected.get("vehicle_make"):
-            make_prefix = str(next_collected["vehicle_make"])
-            if cleaned.lower().startswith(make_prefix.lower()):
-                cleaned = cleaned[len(make_prefix):].strip()
-        if cleaned:
-            next_collected.setdefault("vehicle_model", cleaned.title())
-
-    elif current_field == "coverage_level":
-        coverage_match = re.search(r"\b(basic|standard|comprehensive)\b", lowered)
-        if coverage_match:
-            next_collected.setdefault("coverage_level", coverage_match.group(1))
-
-    return next_collected
-
-
-def _merge_auto_sequential_input(
-    fields: list[dict[str, Any]],
-    collected: dict[str, Any],
-    current_field: str,
-    raw: str,
-) -> dict[str, Any] | None:
-    if "," not in raw:
-        return None
-
-    field_names = [str(field["name"]) for field in fields]
-    if current_field not in field_names:
-        return None
-
-    parts = [
-        re.sub(r"^[`'\"\s]+|[`'\"\s]+$", "", part)
-        for part in raw.split(",")
-    ]
-    parts = [part for part in parts if part]
-    if len(parts) < 2:
-        return None
-
-    next_collected = dict(collected)
-    start_index = field_names.index(current_field)
-
-    for field_name, raw_value in zip(field_names[start_index:], parts, strict=False):
-        if field_name in next_collected:
-            continue
-        field_spec = _get_field_spec(fields, field_name)
-        try:
-            next_collected[field_name] = _coerce_value(
-                field_name,
-                str(field_spec.get("type", "str")),
-                raw_value,
-                allowed=field_spec.get("allowed"),
-                min_value=field_spec.get("min_value"),
-                max_value=field_spec.get("max_value"),
-                min_length=field_spec.get("min_length"),
-            )
-        except ValueError:
-            break
-
-    return next_collected
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
 
 
 def _next_missing_field(fields: list[dict[str, Any]], collected: dict[str, Any]) -> str | None:
@@ -278,10 +182,6 @@ def _get_field_spec(fields: list[dict[str, Any]], name: str) -> dict[str, Any]:
         if field["name"] == name:
             return field
     return {}
-
-
-def _field_type(fields: list[dict[str, Any]], name: str) -> str:
-    return str(_get_field_spec(fields, name).get("type", "str"))
 
 
 def _field_prompt(fields: list[dict[str, Any]], name: str) -> str:
@@ -304,7 +204,41 @@ def _coerce_value(
         raise ValueError("That answer was empty.")
 
     coerced: Any
-    if field_type == "int":
+
+    if field_type == "phone":
+        digits = re.sub(r"\D", "", value)
+        if len(digits) < 10 or len(digits) > 15:
+            raise ValueError(
+                "That phone number doesn't look complete — please include the area code."
+            )
+        return digits
+
+    elif field_type == "email":
+        stripped = value.lower().strip()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[A-Za-z]{2,}", stripped):
+            raise ValueError(
+                "That email doesn't look right — could you re-type it? (e.g. maria@example.com)"
+            )
+        return stripped
+
+    elif field_type == "slot":
+        parsed = parse_slot_phrase(value)
+        if parsed is None:
+            raise ValueError(
+                "I couldn't read that time — try something like 'Wednesday 2:30 PM'."
+            )
+        now_utc = datetime.now(UTC)
+        # Defensive check — parse_slot_phrase already guarantees strictly future,
+        # but guard anyway in case of clock skew.
+        if parsed <= now_utc:
+            raise ValueError(
+                "That time is in the past — what's the next day and time that works?"
+            )
+        # v1: store as UTC-naive isoformat (real timezone handling is a Phase 4
+        # concern when Cal.com integration lands).
+        return parsed.replace(tzinfo=None).isoformat()
+
+    elif field_type == "int":
         try:
             coerced = int(value)
         except ValueError:
@@ -313,6 +247,7 @@ def _coerce_value(
             raise ValueError(_range_error_message(field_name, min_value=min_value, max_value=max_value))
         if max_value is not None and coerced > max_value:
             raise ValueError(_range_error_message(field_name, min_value=min_value, max_value=max_value))
+
     elif field_type == "float":
         try:
             coerced = float(value.replace(",", "").replace("$", ""))
@@ -322,6 +257,7 @@ def _coerce_value(
             raise ValueError(_range_error_message(field_name, min_value=min_value, max_value=max_value))
         if max_value is not None and coerced > float(max_value):
             raise ValueError(_range_error_message(field_name, min_value=min_value, max_value=max_value))
+
     elif field_type == "bool":
         lowered = value.lower()
         if lowered in {"yes", "y", "true", "1"}:
@@ -330,6 +266,7 @@ def _coerce_value(
             coerced = False
         else:
             raise ValueError("Please reply yes or no.")
+
     else:
         coerced = _clean_text_value(field_name, value, min_length=min_length)
 
@@ -359,31 +296,21 @@ def _clean_text_value(field_name: str, value: str, *, min_length: int | None = N
         raise ValueError("Please answer with the requested detail only.")
 
     lowered = normalized.lower()
-    if any(term in lowered for term in ("quote", "coverage", "policy", "insurance")):
-        raise ValueError("Please enter the requested detail, not a new policy question.")
+    # Dental non-answer guard: reject inputs that are obviously a booking
+    # request or irrelevant topic rather than the requested field value.
+    # Use word-boundary matching (consistent with router.py / services/catalog.py)
+    # to avoid false positives on names like "Robin Booker" or "Maria Bookington".
+    if any(
+        re.search(rf"\b{re.escape(term)}\b", lowered)
+        for term in ("appointment", "booking", "insurance")
+    ):
+        raise ValueError("Please enter the requested detail, not a new booking question.")
 
     if len(alpha_tokens) > 6:
         raise ValueError("Please keep the answer short and limited to the requested detail.")
 
     if min_length is not None and len(normalized) < min_length:
         raise ValueError("Please enter a valid text value.")
-
-    if field_name == "location":
-        if len(normalized) < 3:
-            raise ValueError("Please enter a valid city or location.")
-        if len(alpha_tokens) < 1:
-            raise ValueError("Please enter a valid city or location.")
-        if len(alpha_tokens) > 3:
-            raise ValueError("Please enter only the city or location name.")
-        if normalized.lower().startswith(("i ", "my ", "we ", "they ")):
-            raise ValueError("Please enter only the city or location name.")
-        lower_tokens = {token.lower() for token in alpha_tokens}
-        if {"like", "love"} & lower_tokens:
-            raise ValueError("Please enter a real city or location.")
-        if len(alpha_tokens) == 1 and next(iter(lower_tokens)) in LOCATION_DENYLIST:
-            raise ValueError("Please enter a real city or location, for example Makati, Manila, or Quezon City.")
-        if not re.fullmatch(r"[A-Za-z\s,.-]+", normalized):
-            raise ValueError("Please enter a valid city or location.")
 
     return normalized
 
@@ -394,22 +321,6 @@ def _range_error_message(
     min_value: float | int | None,
     max_value: float | int | None,
 ) -> str:
-    if field_name == "year_built" and min_value is not None and max_value is not None:
-        return f"Year built must be between {int(min_value)} and {int(max_value)}."
-    if field_name == "vehicle_year" and min_value is not None and max_value is not None:
-        return f"Vehicle year must be between {int(min_value)} and {int(max_value)}."
-    if field_name == "estimated_value" and min_value is not None:
-        return (
-            "Please enter a more realistic property value in USD, "
-            "for example 100000 or 350000."
-        )
-    if field_name == "accidents_last_5yr" and min_value is not None and max_value is not None:
-        return (
-            "Please enter a realistic accident count between "
-            f"{int(min_value)} and {int(max_value)} for the last 5 years."
-        )
-    if field_name == "coverage_amount" and min_value is not None:
-        return "Please enter a positive coverage amount."
     if min_value is not None and max_value is not None:
         return f"Please enter a number between {int(min_value)} and {int(max_value)}."
     if min_value is not None:

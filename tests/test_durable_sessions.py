@@ -109,10 +109,15 @@ def test_second_turn_uses_persisted_state(tmp_path: Path, monkeypatch: pytest.Mo
         assert result2["service_type"] == "cleaning", (
             f"service_type not stored: {result2.get('service_type')!r}"
         )
-        # intake_step may bounce back to identify (collect_details finds no FIELD_SPECS for dental
-        # yet — Task 5 adds them); don't assert on specific step or message text here.
+        # "cleaning" → identify_service → collect_details; first field is patient_name.
         assert result2["mode"] == "transactional", (
             f"mode not transactional: {result2.get('mode')!r}"
+        )
+        assert result2["intake_step"] == "collect", (
+            f"intake_step not 'collect': {result2.get('intake_step')!r}"
+        )
+        assert result2["current_field"] == "patient_name", (
+            f"current_field not 'patient_name': {result2.get('current_field')!r}"
         )
     finally:
         monkeypatch.setenv("SESSIONS_BACKEND", "memory")
