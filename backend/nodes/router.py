@@ -12,8 +12,8 @@ allowed to steer the conversation.
 Route labels returned by ``decide``:
 
 - ``"confirm"``            — accept / adjust / restart an existing intake
-- ``"start_intake"``       — begin a new intake or switch service
-- ``"identify"``           — user is choosing which service to book
+- ``"start_intake"``       — begin a new appointment intake or switch service
+- ``"identify"``           — user is choosing which dental service to book
 - ``"collect"``            — user gave a field value (validate + store)
 - ``"answer_then_resume"`` — user paused mid-intake to ask a question
 - ``"rag"``                — answer a knowledge-base question
@@ -21,18 +21,24 @@ Route labels returned by ``decide``:
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from typing import Any
 
 from services.catalog import detect_service
 
 # Deterministic keyword signals. These are the only words the router reads.
+# All hint tuples are matched with word-boundary (\b) anchoring, consistent
+# with services/catalog.py detect_service — partial-word hits (e.g. "booking"
+# containing "book", "unavailable" containing "available") are not matched.
 RESTART_HINTS = ("restart", "start over", "reset")
 ADJUST_HINTS = ("adjust", "change", "modify", "update", "edit")
 AFFIRM_HINTS = ("yes", "accept", "confirm", "looks good", "approve", "ok", "okay", "good")
 PROGRESSION_HINTS = ("next", "continue", "go on", "proceed")
-# Explicit buying intent that may appear without the literal word "quote".
-QUOTE_INTENT_HINTS = ("price", "pricing", "buy", "purchase", "insure", "get a policy", "sign up")
+# Explicit booking intent that may appear without the literal booking words.
+# Word-boundary matching requires listing inflections we want to catch, so both
+# "book" and "booking" (and "appointment" / "appointments") are included.
+BOOKING_INTENT_HINTS = ("price", "pricing", "availability", "available", "come in", "see the dentist", "slot", "walk in")
 
 ACTIVE_INTAKE_STEPS = {"collect", "validate", "confirm"}
 
@@ -48,9 +54,10 @@ def decide(state: dict[str, Any], message: str) -> str:
     if mode == "transactional" and _contains_any(text, RESTART_HINTS):
         return "confirm"
 
-    # P2 — An explicit "...quote..." request starts an intake or switches service,
-    #      from any state. This is how a mid-intake service switch is handled.
-    if "quote" in text:
+    # P2 — An explicit booking/appointment request starts an intake or switches
+    #      service, from any state. This is how a mid-intake service switch is
+    #      handled.
+    if _contains_any(text, ("appointment", "appointments", "book", "booking", "schedule")):
         return "start_intake"
 
     # P3 — We are waiting for one specific field value (the core invariant).
@@ -73,9 +80,12 @@ def decide(state: dict[str, Any], message: str) -> str:
             return "identify"
         return "rag"
 
-    # P6 — Idle/conversational. Only an explicit, non-question buying intent
-    #      starts an intake; everything else is a knowledge question.
-    if "?" not in text and _contains_any(text, QUOTE_INTENT_HINTS):
+    # P6 — Idle/conversational. Only an explicit, non-question booking intent
+    #      (or a detected dental service keyword) starts an intake; everything
+    #      else is a knowledge question.
+    #      The "?" guard is essential: "Does whitening damage enamel?" contains
+    #      a service keyword but must stay rag.
+    if "?" not in text and (_contains_any(text, BOOKING_INTENT_HINTS) or detect_service(text)):
         return "start_intake"
     return "rag"
 
@@ -93,4 +103,10 @@ def interpret_confirmation(message: str) -> str | None:
 
 
 def _contains_any(text: str, needles: Iterable[str]) -> bool:
-    return any(needle in text for needle in needles)
+    """Return True if any needle appears as a whole word in text.
+
+    Uses word-boundary (\\b) anchoring so that, e.g., "book" does not fire
+    inside "facebook", and "available" does not fire inside "unavailable".
+    Matches are case-insensitive because callers always pass lowercased text.
+    """
+    return any(re.search(rf"\b{re.escape(needle)}\b", text) for needle in needles)

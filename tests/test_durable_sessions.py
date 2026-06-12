@@ -51,10 +51,10 @@ def test_session_state_survives_graph_rebuild(tmp_path: Path, monkeypatch: pytes
 
     import graph
 
-    # ── Graph 1: send "I want a quote" (P2 → start_intake → identify_service prompts dental question) ─
+    # ── Graph 1: send "I'd like to book an appointment" (P2 → start_intake → identify_service prompts dental question) ─
     graph.reset_all()
     try:
-        graph.run_graph("durable-session", "I want a quote")
+        graph.run_graph("durable-session", "I'd like to book an appointment")
 
         # ── Simulate restart: rebuild with the same db file ──────────────────
         graph.reset_all()
@@ -96,8 +96,8 @@ def test_second_turn_uses_persisted_state(tmp_path: Path, monkeypatch: pytest.Mo
 
     graph.reset_all()
     try:
-        # Turn 1 on graph-1: "I want a quote" → start_intake → identify_service → dental prompt
-        graph.run_graph("multi-turn-session", "I want a quote")
+        # Turn 1 on graph-1: "I'd like to book an appointment" → start_intake → identify_service → dental prompt
+        graph.run_graph("multi-turn-session", "I'd like to book an appointment")
 
         # Simulate restart before turn 2
         graph.reset_all()

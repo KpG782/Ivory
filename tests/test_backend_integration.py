@@ -248,11 +248,11 @@ def test_numeric_field_reply_stays_in_quote_flow(client: TestClient) -> None:
 
 
 def test_explicit_quote_request_starts_collection(client: TestClient) -> None:
-    events = _post_chat(client, "quote-start-session", "I want a quote for auto insurance")
+    events = _post_chat(client, "quote-start-session", "I'd like to book an appointment")
     payload = events[-1]["data"]
 
-    # P2 "quote" → start_intake → identify_service → dental service prompt
-    # (auto is not a dental service keyword, so no service is detected — prompts which service)
+    # P2 "book" → start_intake → identify_service → dental service prompt
+    # (no dental service keyword → stays at identify, prompts which service)
     assert payload["session"]["mode"] == "transactional"
     assert payload["session"]["intake_step"] == "identify"
     assert payload["session"]["service_type"] is None
@@ -486,10 +486,10 @@ def test_invalid_term_length_is_rejected_for_life_quote(client: TestClient) -> N
 def test_quote_flow_starts_in_identify_mode_instead_of_rag(client: TestClient) -> None:
     session_id = "start-quote-session"
 
-    events = _post_chat(client, session_id, "I want a quote")
+    events = _post_chat(client, session_id, "I'd like to book an appointment")
     payload = events[-1]["data"]
 
-    # P2 "quote" → start_intake → identify_service → dental service prompt
+    # P2 "book" → start_intake → identify_service → dental service prompt
     assert "which service would you like to book" in payload["message"].lower()
     assert payload["session"]["mode"] == "transactional"
     assert payload["session"]["intake_step"] == "identify"
@@ -614,8 +614,8 @@ def test_implausible_accident_count_is_rejected_before_quote_generation(client: 
 def test_restart_during_confirm_resets_product_selection(client: TestClient) -> None:
     session_id = "restart-confirm-session"
 
-    # Start an intake — P2 "quote" → start_intake → identify_service → dental prompt
-    _post_chat(client, session_id, "I want a quote")
+    # Start an intake — P2 "book" → start_intake → identify_service → dental prompt
+    _post_chat(client, session_id, "I'd like to book an appointment")
 
     events = _post_chat(client, session_id, "restart")
     payload = events[-1]["data"]
@@ -651,13 +651,13 @@ def test_state_persists_across_graph_rebuild(client: TestClient) -> None:
     """
     import graph
 
-    _post_chat(client, "persist-session", "I want a quote")
+    _post_chat(client, "persist-session", "I'd like to book an appointment")
 
     graph.COMPILED_GRAPH = graph._build_graph().compile(checkpointer=graph._checkpointer)
 
     state = graph.get_session_state("persist-session")
     assert state is not None
-    # After "I want a quote" → start_intake → identify_service, mode is transactional
+    # After "I'd like to book an appointment" → start_intake → identify_service, mode is transactional
     assert state["mode"] == "transactional"
     assert state["intake_step"] == "identify"
 
@@ -698,10 +698,10 @@ def test_routing_is_a_pure_function_without_any_llm() -> None:
     state = {
         "mode": "transactional",
         "intake_step": "collect",
-        "current_field": "vehicle_year",
-        "service_type": "auto",
+        "current_field": "phone",
+        "service_type": "cleaning",
     }
-    assert decide(state, "2019") == "collect"
-    assert decide(state, "what does comprehensive cover?") == "answer_then_resume"
+    assert decide(state, "09171234567") == "collect"
+    assert decide(state, "do you take walk-ins?") == "answer_then_resume"
     assert decide(state, "restart") == "confirm"
-    assert decide(dict(state), "2019") == decide(dict(state), "2019")
+    assert decide(dict(state), "09171234567") == decide(dict(state), "09171234567")
