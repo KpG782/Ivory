@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -16,71 +15,9 @@ if str(BACKEND_DIR) not in sys.path:
 import main
 from services.vectorstore import RetrievedChunk
 
-
-def _parse_sse_body(body: str) -> list[dict[str, Any]]:
-    events: list[dict[str, Any]] = []
-    for raw_event in body.strip().split("\n\n"):
-        if not raw_event.strip():
-            continue
-        event_name = "message"
-        data_lines: list[str] = []
-        for line in raw_event.splitlines():
-            if line.startswith("event:"):
-                event_name = line.split(":", 1)[1].strip()
-            elif line.startswith("data:"):
-                data_lines.append(line.split(":", 1)[1].strip())
-        payload = "\n".join(data_lines)
-        events.append(
-            {
-                "event": event_name,
-                "data": json.loads(payload) if payload else None,
-            }
-        )
-    return events
-
-
-def _post_chat(client: TestClient, session_id: str, message: str) -> list[dict[str, Any]]:
-    response = client.post("/chat", json={"session_id": session_id, "message": message})
-    assert response.status_code == 200
-    return _parse_sse_body(response.text)
-
-
-@pytest.fixture()
-def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    import nodes.rag as rag
-
-    # Disable rate limiting so the test suite does not hit per-IP limits.
-    # _is_rate_limit_disabled() reads this env var at request time, so
-    # monkeypatch.setenv is effective even though main.py is already imported.
-    monkeypatch.setenv("RATE_LIMIT_ENABLED", "false")
-
-    main.SESSION_STORE.clear()
-
-    # Routing is deterministic (no LLM), so there is no classifier to stub. We
-    # only stub the RAG LLM client + retrieval so tests are hermetic/offline.
-    monkeypatch.setattr(rag, "_build_client_or_none", lambda: None)
-    monkeypatch.setattr(
-        rag,
-        "search_knowledge_base",
-        lambda *args, **kwargs: [
-            RetrievedChunk(
-                id="kb-1",
-                score=0.99,
-                source="02_auto_insurance.md",
-                title="Auto Insurance",
-                content=(
-                    "Comprehensive coverage typically includes non-collision losses such as "
-                    "theft, vandalism, fire, weather damage, and falling objects."
-                ),
-                metadata={"source": "02_auto_insurance.md", "title": "Auto Insurance"},
-            )
-        ],
-    )
-
-    with TestClient(main.app) as test_client:
-        yield test_client
-
-    main.SESSION_STORE.clear()
+# _parse_sse_body, _post_chat, and the `client` fixture are defined in conftest.py
+# and are automatically available to all tests in this directory.
+from conftest import _parse_sse_body, _post_chat
 
 
 def test_health_endpoint_returns_ok(client: TestClient) -> None:
@@ -125,9 +62,9 @@ def test_rag_fallback_returns_clean_direct_answer_without_llm(client: TestClient
     assert "based on the knowledge base" not in message
 
 
-@pytest.mark.skip(reason="migrating to dental in task 6")
-def test_dental_booking_flow_returns_booking_result(client: TestClient) -> None:
-    """Full dental booking flow: cleaning → 5 fields → validate → confirm."""
+def test_full_dental_flow_accept_reaches_booked(client: TestClient) -> None:
+    """Full dental booking flow: cleaning → 5 fields → validate → confirm → accept → booked."""
+    # Task 7 extends this with booking_result assertions
     session_id = "dental-booking-session"
     prompts = [
         "I'd like to book a cleaning",
@@ -145,9 +82,17 @@ def test_dental_booking_flow_returns_booking_result(client: TestClient) -> None:
     payload = final_events[-1]["data"]
     assert payload["session"]["intake_step"] == "confirm"
     assert payload["session"]["service_type"] == "cleaning"
+    assert "Maria Santos" in payload["message"]
+    assert "cleaning" in payload["message"].lower()
+
+    # Accept → booked
+    accept_events = _post_chat(client, session_id, "accept")
+    accept_payload = accept_events[-1]["data"]
+    assert accept_payload["session"]["intake_step"] == "booked"
+    assert accept_payload["session"]["mode"] == "conversational"
+    assert "Maria Santos" in accept_payload["message"]
 
 
-@pytest.mark.skip(reason="migrating to dental in task 6")
 def test_adjust_reopens_collection_from_first_field(client: TestClient) -> None:
     """After completing all fields + validating, 'adjust' restarts collection."""
     session_id = "adjust-session"
@@ -166,7 +111,6 @@ def test_adjust_reopens_collection_from_first_field(client: TestClient) -> None:
     message = events[-1]["data"]["message"]
 
     assert "may i have your full name" in message.lower()
-    assert main.SESSION_STORE[session_id]["booking_result"] is None
     assert main.SESSION_STORE[session_id]["current_field"] == "patient_name"
     assert main.SESSION_STORE[session_id]["collected_data"] == {}
 

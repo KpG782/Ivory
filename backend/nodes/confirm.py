@@ -1,30 +1,53 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from nodes.router import interpret_confirmation
+from services.catalog import SERVICES
 
 
 def confirm(state: dict, message: str) -> dict:
     action = interpret_confirmation(message)
-    booking_result = state.get("booking_result")
-
-    if action == "accept" and not booking_result:
-        _append_assistant_message(
-            state,
-            "There is no booking ready to confirm yet. Please complete the booking details first.",
-        )
-        state["mode"] = "transactional"
-        state["intake_step"] = "collect" if state.get("service_type") else "identify"
-        return state
 
     if action == "accept":
-        booking_result = booking_result or {}
-        summary = booking_result.get("summary", "your booking")
+        if state.get("intake_step") != "confirm":
+            _append_assistant_message(
+                state,
+                "There is nothing ready to confirm yet. "
+                "Please complete the booking details first, or say which service you'd like to book.",
+            )
+            state["mode"] = "transactional"
+            state["intake_step"] = state.get("intake_step") or "identify"
+            return state
+
+        # Build a readable placeholder confirmation.
+        collected = state.get("collected_data", {})
+        service = state.get("service_type", "")
+        service_label = SERVICES.get(service, {}).get("label", service)
+        patient_name = collected.get("patient_name", "you")
+        slot_iso = collected.get("preferred_slot")
+        time_str = ""
+        if slot_iso:
+            try:
+                dt = datetime.fromisoformat(slot_iso)
+                weekday = dt.strftime("%A")
+                month = dt.strftime("%b")
+                day = str(dt.day)
+                hour_12 = dt.hour % 12 or 12
+                minute = dt.strftime("%M")
+                ampm = "AM" if dt.hour < 12 else "PM"
+                time_str = f" on {weekday} {month} {day} at {hour_12}:{minute} {ampm}"
+            except ValueError:
+                pass
+
         _append_assistant_message(
             state,
-            f"Confirmed. I have finalized {summary}. Reply restart if you want to begin another booking.",
+            f"You're booked: {service_label} for {patient_name}{time_str}. "
+            "(Booking confirmation wiring lands with the tools layer.) "
+            "Reply restart if you want to begin another booking.",
         )
         state["mode"] = "conversational"
-        state["intake_step"] = "identify"
+        state["intake_step"] = "booked"
         state["current_field"] = None
         return state
 
@@ -42,7 +65,8 @@ def confirm(state: dict, message: str) -> dict:
         _reset_intake_state(state)
         _append_assistant_message(
             state,
-            "The intake flow has been restarted. Which service would you like to book: cleaning, consultation, whitening — or is this an emergency?",
+            "The intake flow has been restarted. Which service would you like to book: "
+            "cleaning, consultation, whitening — or is this an emergency?",
         )
         return state
 

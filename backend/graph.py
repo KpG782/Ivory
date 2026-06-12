@@ -103,10 +103,10 @@ def _collect_details_node(state: ChatState) -> ChatState:
     return ChatState(**collect_details(clone_state(state), message))
 
 
-def _validate_quote_node(state: ChatState) -> ChatState:
-    from nodes.validate_quote import validate_quote
+def _validate_intake_node(state: ChatState) -> ChatState:
+    from nodes.validate_intake import validate_intake
 
-    return ChatState(**validate_quote(clone_state(state)))
+    return ChatState(**validate_intake(clone_state(state)))
 
 
 def _confirm_node(state: ChatState) -> ChatState:
@@ -137,8 +137,8 @@ def _route_after_identify(state: ChatState) -> Literal["collect_details", "__end
     return "collect_details" if state.get("intake_step") == "collect" else END
 
 
-def _route_after_collect(state: ChatState) -> Literal["validate_quote", "__end__"]:
-    return "validate_quote" if state.get("intake_step") == "validate" else END
+def _route_after_collect(state: ChatState) -> Literal["validate_intake", "__end__"]:
+    return "validate_intake" if state.get("intake_step") == "validate" else END
 
 
 def _route_after_confirm(state: ChatState) -> Literal["collect_details", "__end__"]:
@@ -151,7 +151,7 @@ def _build_graph() -> StateGraph:
     graph.add_node("rag_answer", _rag_node)
     graph.add_node("identify_service", _identify_service_node)
     graph.add_node("collect_details", _collect_details_node)
-    graph.add_node("validate_quote", _validate_quote_node)
+    graph.add_node("validate_intake", _validate_intake_node)
     graph.add_node("confirm", _confirm_node)
 
     graph.add_edge(START, "router")
@@ -174,9 +174,9 @@ def _build_graph() -> StateGraph:
     graph.add_conditional_edges(
         "collect_details",
         _route_after_collect,
-        {"validate_quote": "validate_quote", END: END},
+        {"validate_intake": "validate_intake", END: END},
     )
-    graph.add_edge("validate_quote", END)
+    graph.add_edge("validate_intake", END)
     graph.add_conditional_edges(
         "confirm",
         _route_after_confirm,
