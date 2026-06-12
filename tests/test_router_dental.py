@@ -84,3 +84,55 @@ def test_booking_word_starts_intake():
 def test_unavailable_does_not_start_intake():
     """'unavailable' must not match the 'available' hint due to word-boundary anchoring."""
     assert decide({"mode": "conversational", "intake_step": "identify", "current_field": None}, "the dentist was unavailable last time I came by") == "rag"
+
+
+# ── P3b: booked-state echo rule ────────────────────────────────────────────────
+
+_BOOKED = {"mode": "conversational", "intake_step": "booked", "current_field": None}
+
+
+def test_booked_plus_affirm_routes_to_confirm():
+    """P3b: booked state + plain affirmation → confirm (idempotency short-circuit)."""
+    assert decide(dict(_BOOKED), "accept") == "confirm"
+    assert decide(dict(_BOOKED), "yes") == "confirm"
+    assert decide(dict(_BOOKED), "ok") == "confirm"
+
+
+def test_booked_plus_affirm_question_falls_to_rag():
+    """P3b must not fire when the message contains '?' — question goes to rag.
+
+    Note: messages that also contain booking-intent keywords (e.g. 'booking')
+    are caught earlier by P2 (start_intake), which is correct behaviour.
+    """
+    assert decide(dict(_BOOKED), "accept?") == "rag"
+    assert decide(dict(_BOOKED), "am I confirmed?") == "rag"
+
+
+def test_booked_plain_statement_goes_to_rag():
+    """A message that is neither an affirmation nor a booking keyword → rag when booked."""
+    assert decide(dict(_BOOKED), "thanks, that's great") == "rag"
+
+
+# ── Post-booking CTA router unit tests (Issues 1, 2, 3) ──────────────────────
+
+def test_booked_restart_routes_to_confirm():
+    """Issue 1 fix: P1 fires when intake_step == 'booked' even at mode='conversational'.
+
+    The success message advertises 'restart' as a CTA, so the router must honour
+    it from the terminal booked state.
+    """
+    assert decide(dict(_BOOKED), "restart") == "confirm"
+
+
+def test_booked_adjust_routes_to_confirm():
+    """Issue 3 fix: P3b now matches ADJUST_HINTS (without '?') at booked state.
+
+    confirm.py has a booked+adjust branch that emits the 'already booked' nudge,
+    but the router was previously sending 'adjust' to rag. Fixed by extending P3b.
+    """
+    assert decide(dict(_BOOKED), "adjust") == "confirm"
+
+
+def test_booked_adjust_question_falls_to_rag():
+    """P3b '?' guard still applies: 'can I adjust?' must NOT route to confirm."""
+    assert decide(dict(_BOOKED), "can I adjust?") == "rag"

@@ -64,7 +64,6 @@ def test_rag_fallback_returns_clean_direct_answer_without_llm(client: TestClient
 
 def test_full_dental_flow_accept_reaches_booked(client: TestClient) -> None:
     """Full dental booking flow: cleaning → 5 fields → validate → confirm → accept → booked."""
-    # Task 7 extends this with booking_result assertions
     session_id = "dental-booking-session"
     prompts = [
         "I'd like to book a cleaning",
@@ -91,6 +90,13 @@ def test_full_dental_flow_accept_reaches_booked(client: TestClient) -> None:
     assert accept_payload["session"]["intake_step"] == "booked"
     assert accept_payload["session"]["mode"] == "conversational"
     assert "Maria Santos" in accept_payload["message"]
+
+    # Task 7: booking_result assertions
+    assert accept_payload["session"]["has_booking_result"] is True
+    booking_result = accept_payload["booking_result"]
+    assert booking_result is not None
+    assert booking_result["booking_uid"].startswith("mock_")
+    assert booking_result["confirmation_email"] == "sent"
 
 
 def test_adjust_reopens_collection_from_first_field(client: TestClient) -> None:

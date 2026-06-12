@@ -17,6 +17,15 @@ Route labels returned by ``decide``:
 - ``"collect"``            — user gave a field value (validate + store)
 - ``"answer_then_resume"`` — user paused mid-intake to ask a question
 - ``"rag"``                — answer a knowledge-base question
+
+Rule ordering (P1–P6):
+  P1  Explicit restart while inside an intake.
+  P2  Explicit booking/appointment request from any state.
+  P3  A field is pending (current_field is set).
+  P3b Already booked + affirmation without "?" → re-emit success via confirm.
+  P4  Intake built and waiting for accept / adjust / restart.
+  P5  Identifying which service to book.
+  P6  Idle/conversational fallback.
 """
 
 from __future__ import annotations
@@ -50,8 +59,11 @@ def decide(state: dict[str, Any], message: str) -> str:
     step = state.get("intake_step", "identify")
     current_field = state.get("current_field")
 
-    # P1 — An explicit restart while inside an intake always wins.
-    if mode == "transactional" and _contains_any(text, RESTART_HINTS):
+    # P1 — An explicit restart while inside an intake, OR after booking is
+    #      complete, always wins. The success message advertises "restart" as
+    #      the CTA, so we must honour it even though mode has returned to
+    #      "conversational" at the terminal "booked" step.
+    if (mode == "transactional" or step == "booked") and _contains_any(text, RESTART_HINTS):
         return "confirm"
 
     # P2 — An explicit booking/appointment request starts an intake or switches
@@ -68,6 +80,14 @@ def decide(state: dict[str, Any], message: str) -> str:
         if "?" in text:
             return "answer_then_resume"
         return "collect"
+
+    # P3b — Booking is already confirmed ("booked") and the user sends a plain
+    #       affirmation or adjust signal (no "?"). Route to confirm so it can
+    #       detect intake_step == "booked" and respond appropriately — the
+    #       accept branch short-circuits via book_appointment's idempotency
+    #       guard, the adjust branch emits the "already booked" nudge.
+    if step == "booked" and _contains_any(text, AFFIRM_HINTS + ADJUST_HINTS) and "?" not in text:
+        return "confirm"
 
     # P4 — An intake is built and waiting for accept / adjust / restart.
     if mode == "transactional" and step == "confirm":

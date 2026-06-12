@@ -1,15 +1,23 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from nodes.router import interpret_confirmation
-from services.catalog import SERVICES
 
 
 def confirm(state: dict, message: str) -> dict:
     action = interpret_confirmation(message)
 
     if action == "accept":
+        if state.get("intake_step") == "booked":
+            # Booking already exists — user re-sent an affirmation.
+            # Route to book_appointment so its idempotency guard re-emits
+            # the success summary without calling any tool again.
+            booking_result = state.get("booking_result") or {}
+            if booking_result.get("booking_uid"):
+                state["route"] = "book"
+                return state
+            # booking_result missing uid despite booked step — shouldn't happen,
+            # but fall through to the normal "nothing to confirm" path.
+
         if state.get("intake_step") != "confirm":
             _append_assistant_message(
                 state,
@@ -20,38 +28,19 @@ def confirm(state: dict, message: str) -> dict:
             state["intake_step"] = state.get("intake_step") or "identify"
             return state
 
-        # Build a readable placeholder confirmation.
-        collected = state.get("collected_data", {})
-        service = state.get("service_type", "")
-        service_label = SERVICES.get(service, {}).get("label", service)
-        patient_name = collected.get("patient_name", "you")
-        slot_iso = collected.get("preferred_slot")
-        time_str = ""
-        if slot_iso:
-            try:
-                dt = datetime.fromisoformat(slot_iso)
-                weekday = dt.strftime("%A")
-                month = dt.strftime("%b")
-                day = str(dt.day)
-                hour_12 = dt.hour % 12 or 12
-                minute = dt.strftime("%M")
-                ampm = "AM" if dt.hour < 12 else "PM"
-                time_str = f" on {weekday} {month} {day} at {hour_12}:{minute} {ampm}"
-            except ValueError:
-                pass
-
-        _append_assistant_message(
-            state,
-            f"You're booked: {service_label} for {patient_name}{time_str}. "
-            "(Booking confirmation wiring lands with the tools layer.) "
-            "Reply restart if you want to begin another booking.",
-        )
-        state["mode"] = "conversational"
-        state["intake_step"] = "booked"
-        state["current_field"] = None
+        # Signal the router to invoke book_appointment on the next edge.
+        # book_appointment decides success/failure state and appends the final message.
+        state["route"] = "book"
         return state
 
     if action == "adjust":
+        if state.get("intake_step") == "booked":
+            _append_assistant_message(
+                state,
+                "You're already booked — reply **restart** to begin a new booking.",
+            )
+            return state
+
         service_type = state.get("service_type")
         state["intake_step"] = "collect"
         state["current_field"] = None

@@ -21,6 +21,7 @@ from uuid import uuid4
 
 from langgraph.graph import END, START, StateGraph
 
+from nodes.book_appointment import book_appointment
 from nodes.collect_details import collect_details, get_field_prompt
 from nodes.confirm import confirm
 from nodes.identify_service import detect_service, identify_service
@@ -55,10 +56,23 @@ def _router_node(state: ChatState) -> ChatState:
 def _apply_service_switch(state: ChatState, message: str) -> None:
     service = detect_service(message)
     current_type = state.get("service_type")
+    step = state.get("intake_step")
     mid_intake = (
         state.get("mode") == "transactional"
-        and state.get("intake_step") in {"collect", "validate", "confirm"}
+        and step in {"collect", "validate", "confirm"}
     )
+
+    if step == "booked":
+        # Terminal state: any booking/appointment request is a fresh start.
+        # Discard the stale service, collected_data, and booking_result so
+        # identify_service doesn't inherit the old answers.
+        _reset_intake_progress(state)
+        # If the message names a service, pre-select it; otherwise leave None
+        # so identify_service asks the user which service they want.
+        if service:
+            state["service_type"] = service
+        return
+
     if service and service != current_type and mid_intake:
         _reset_intake_progress(state)
         state["service_type"] = service
@@ -114,6 +128,11 @@ def _confirm_node(state: ChatState) -> ChatState:
     return ChatState(**confirm(clone_state(state), latest_message))
 
 
+def _book_appointment_node(state: ChatState) -> ChatState:
+    """Wrapper: passes only state; book_appointment calls registry.get_tools() internally."""
+    return ChatState(**book_appointment(clone_state(state)))
+
+
 # ── Edges ───────────────────────────────────────────────────────────────────
 
 def _route_from_router(state: ChatState) -> Literal[
@@ -141,8 +160,14 @@ def _route_after_collect(state: ChatState) -> Literal["validate_intake", "__end_
     return "validate_intake" if state.get("intake_step") == "validate" else END
 
 
-def _route_after_confirm(state: ChatState) -> Literal["collect_details", "__end__"]:
-    return "collect_details" if state.get("intake_step") == "collect" else END
+def _route_after_confirm(
+    state: ChatState,
+) -> Literal["book_appointment", "collect_details", "__end__"]:
+    if state.get("route") == "book":
+        return "book_appointment"
+    if state.get("intake_step") == "collect":
+        return "collect_details"
+    return END
 
 
 def _build_graph() -> StateGraph:
@@ -153,6 +178,7 @@ def _build_graph() -> StateGraph:
     graph.add_node("collect_details", _collect_details_node)
     graph.add_node("validate_intake", _validate_intake_node)
     graph.add_node("confirm", _confirm_node)
+    graph.add_node("book_appointment", _book_appointment_node)
 
     graph.add_edge(START, "router")
     graph.add_conditional_edges(
@@ -180,8 +206,13 @@ def _build_graph() -> StateGraph:
     graph.add_conditional_edges(
         "confirm",
         _route_after_confirm,
-        {"collect_details": "collect_details", END: END},
+        {
+            "book_appointment": "book_appointment",
+            "collect_details": "collect_details",
+            END: END,
+        },
     )
+    graph.add_edge("book_appointment", END)
 
     return graph
 

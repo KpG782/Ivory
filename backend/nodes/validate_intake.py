@@ -6,6 +6,21 @@ from nodes.collect_details import INTAKE_FIELDS, _coerce_value
 from services.catalog import SERVICES
 
 
+def humanize_slot(slot_iso: str) -> str:
+    """Return a human-readable appointment time string from a naive ISO datetime string.
+
+    E.g. "2026-06-17T14:30:00" → "Wednesday Jun 17 at 2:30 PM"
+    """
+    dt = datetime.fromisoformat(slot_iso)
+    weekday = dt.strftime("%A")
+    month = dt.strftime("%b")
+    day = str(dt.day)
+    hour_12 = dt.hour % 12 or 12
+    minute = dt.strftime("%M")
+    ampm = "AM" if dt.hour < 12 else "PM"
+    return f"{weekday} {month} {day} at {hour_12}:{minute} {ampm}"
+
+
 def validate_intake(state: dict, message: str | None = None) -> dict:
     collected = dict(state.get("collected_data", {}))
     service = state.get("service_type", "")
@@ -73,15 +88,7 @@ def validate_intake(state: dict, message: str | None = None) -> dict:
     email = collected["email"]
     slot_iso = collected["preferred_slot"]
 
-    dt = datetime.fromisoformat(slot_iso)
-    # Portable day/hour formatting: avoid %-d and %-I (Linux-only).
-    weekday = dt.strftime("%A")
-    month = dt.strftime("%b")
-    day = str(dt.day)          # no leading zero
-    hour_12 = dt.hour % 12 or 12
-    minute = dt.strftime("%M")
-    ampm = "AM" if dt.hour < 12 else "PM"
-    time_str = f"{weekday} {month} {day} at {hour_12}:{minute} {ampm}"
+    time_str = humanize_slot(slot_iso)
 
     summary = (
         f"Here's what I have: **{service_label}** for **{patient_name}**, "
