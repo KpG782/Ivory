@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+import { isValidSession } from "../auth/_auth";
+
 const DEFAULT_BACKEND_BASE_URL = "http://127.0.0.1:8000";
 
 function buildBackendUrl(path: string): string {
@@ -10,6 +12,12 @@ function buildBackendUrl(path: string): string {
 }
 
 export async function POST(request: Request) {
+  // Session resets are workspace actions — require the same httpOnly session
+  // cookie that /api/auth/check validates before proxying to the backend.
+  if (!isValidSession(request.headers.get("cookie"))) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const payload = await request.text();
   const upstream = await fetch(buildBackendUrl("/reset"), {
     method: "POST",

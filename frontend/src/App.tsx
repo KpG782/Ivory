@@ -20,8 +20,7 @@ const STEP_PROGRESS: Record<string, number> = {
   collect: 0.5,
   collect_details: 0.5,
   validate: 0.75,
-  confirm: 1,
-  quote: 1
+  confirm: 1
 };
 
 function flowChipLabel(snapshot: SessionSnapshot | null): string | null {
@@ -29,13 +28,13 @@ function flowChipLabel(snapshot: SessionSnapshot | null): string | null {
     return null;
   }
 
-  const product = snapshot.insurance_type
-    ? `${snapshot.insurance_type} quote`
-    : "Quote";
-  const step = snapshot.quote_step
-    ? snapshot.quote_step.replace(/_/g, " ")
+  const service = snapshot.service_type
+    ? `${snapshot.service_type} intake`
+    : "Intake";
+  const step = snapshot.intake_step
+    ? snapshot.intake_step.replace(/_/g, " ")
     : "in progress";
-  return `${product} · ${step}`;
+  return `${service} · ${step}`;
 }
 
 function progressFraction(snapshot: SessionSnapshot | null): number | null {
@@ -43,7 +42,7 @@ function progressFraction(snapshot: SessionSnapshot | null): number | null {
     return null;
   }
 
-  return STEP_PROGRESS[snapshot.quote_step ?? ""] ?? 0.3;
+  return STEP_PROGRESS[snapshot.intake_step ?? ""] ?? 0.3;
 }
 
 export default function App() {
@@ -284,8 +283,8 @@ export default function App() {
   const progress = progressFraction(chat.sessionSnapshot);
   const statusChip = chat.isSending
     ? "Thinking…"
-    : chat.sessionSnapshot?.has_quote_result
-      ? "Quote ready"
+    : chat.sessionSnapshot?.has_visit_estimate
+      ? "Estimate ready"
       : chat.sessionSnapshot?.mode === "transactional"
         ? "Collecting details"
         : "Knowledge mode";
@@ -389,7 +388,7 @@ export default function App() {
             aria-valuenow={Math.round(progress * 100)}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label="Quote progress"
+            aria-label="Intake progress"
           >
             <div
               className="h-full rounded-r-full bg-teal transition-all duration-300"
@@ -404,7 +403,7 @@ export default function App() {
           error={chat.error}
           isSending={chat.isSending}
           isResetting={chat.isResetting}
-          hasQuoteResult={Boolean(chat.sessionSnapshot?.has_quote_result)}
+          hasVisitEstimate={Boolean(chat.sessionSnapshot?.has_visit_estimate)}
           onDraftChange={setDraft}
           onSend={submitDraft}
           onStop={chat.stopGeneration}

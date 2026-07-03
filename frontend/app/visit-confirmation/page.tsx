@@ -1,5 +1,5 @@
-import QuoteConfirmationPage from "../../src/QuoteConfirmationPage";
+import VisitConfirmationPage from "../../src/VisitConfirmationPage";
 
-export default function QuoteConfirmationRoute() {
-  return <QuoteConfirmationPage />;
+export default function VisitConfirmationRoute() {
+  return <VisitConfirmationPage />;
 }

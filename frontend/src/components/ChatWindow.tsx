@@ -8,24 +8,24 @@ import { TypingIndicator } from "./TypingIndicator";
 
 const STARTER_PROMPTS = [
   {
-    title: "Start an auto quote",
-    hint: "Five quick details, instant premium",
-    prompt: "I want a quote for auto insurance"
+    title: "Book a cleaning",
+    hint: "Five quick details, instant visit estimate",
+    prompt: "I'd like to book a cleaning"
   },
   {
-    title: "What does comprehensive include?",
-    hint: "Answers from the policy knowledge base",
-    prompt: "What does comprehensive coverage include?"
+    title: "What should I do about a toothache?",
+    hint: "First steps from the dental knowledge base",
+    prompt: "What should I do about a toothache?"
   },
   {
-    title: "Home insurance quote",
-    hint: "Coverage for your property in minutes",
-    prompt: "I want a home insurance quote"
+    title: "Cosmetic consultation",
+    hint: "Whitening, veneers, aligners, or bonding",
+    prompt: "I'd like to book a cosmetic consultation"
   },
   {
-    title: "Compare pricing tiers",
-    hint: "Basic, standard, and premium side by side",
-    prompt: "Compare the pricing tiers"
+    title: "Whitening cost",
+    hint: "Pricing guidance before you book",
+    prompt: "How much does teeth whitening cost?"
   }
 ];
 
@@ -41,7 +41,7 @@ interface ChatWindowProps {
   error: string | null;
   isSending: boolean;
   isResetting: boolean;
-  hasQuoteResult: boolean;
+  hasVisitEstimate: boolean;
   onDraftChange: (value: string) => void;
   onSend: () => void;
   onStop: () => void;
@@ -54,7 +54,7 @@ export function ChatWindow({
   error,
   isSending,
   isResetting,
-  hasQuoteResult,
+  hasVisitEstimate,
   onDraftChange,
   onSend,
   onStop,
@@ -93,8 +93,8 @@ export function ChatWindow({
             How can we help today?
           </h1>
           <p className="mt-2 max-w-md text-center text-[15px] leading-6 text-muted">
-            Ask a policy question, or start a quote — Ivory keeps your place if
-            you get interrupted.
+            Ask a dental question, or set up a visit — Ivory keeps your place
+            if you get interrupted.
           </p>
           <div className="mt-8 grid w-full max-w-2xl gap-3 sm:grid-cols-2">
             {STARTER_PROMPTS.map((starter) => (
@@ -148,7 +148,7 @@ export function ChatWindow({
           onSend();
         }}
       >
-        {hasQuoteResult && !isSending && !showWelcome ? (
+        {hasVisitEstimate && !isSending && !showWelcome ? (
           <div className="mb-2 flex flex-wrap gap-2">
             {QUICK_REPLIES.map((reply) => (
               <button
@@ -215,7 +215,8 @@ export function ChatWindow({
           )}
         </div>
         <p className="mt-2 text-center text-xs text-muted/70">
-          Ivory is an AI assistant — quotes are estimates, not final offers.
+          Ivory is an AI assistant — estimates are educational, not a diagnosis
+          or final price.
         </p>
       </form>
     </section>

@@ -4,7 +4,7 @@ import { memo } from "react";
 import type { ChatMessage } from "../types";
 import { IvoryLogo } from "./IvoryLogo";
 import { MarkdownMessage } from "./MarkdownMessage";
-import { QuoteCard } from "./QuoteCard";
+import { VisitCard } from "./VisitCard";
 import { TypingIndicator } from "./TypingIndicator";
 
 function MessageBody({ message }: { message: ChatMessage }) {
@@ -38,9 +38,9 @@ function MessageBubbleComponent({ message }: { message: ChatMessage }) {
           >
             <MessageBody message={message} />
           </div>
-          {message.quoteResult ? (
+          {message.visitEstimate ? (
             <div className="mt-3 max-w-md">
-              <QuoteCard quote={message.quoteResult} />
+              <VisitCard estimate={message.visitEstimate} />
             </div>
           ) : null}
         </div>

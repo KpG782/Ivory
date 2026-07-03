@@ -15,9 +15,9 @@ const displayFont = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Ivory Insurance Assistant",
+  title: "Ivory Dental Front Desk",
   description:
-    "Responsive insurance assistant UI for conversational answers and structured quote flows."
+    "Responsive dental front-desk assistant UI for conversational answers and structured visit intake flows."
 };
 
 export default function RootLayout({

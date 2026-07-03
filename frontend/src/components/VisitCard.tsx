@@ -1,7 +1,38 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { QuoteResult } from "../types";
+import type { VisitEstimate } from "../types";
+
+/** Canonical dental-first ordering for detail rows and exports. */
+const DENTAL_FIELD_ORDER = [
+  "service_type",
+  "summary",
+  "estimate_low",
+  "estimate_high",
+  "currency",
+  "patient_name",
+  "contact_email",
+  "contact_phone",
+  "last_visit_year",
+  "insurance_status",
+  "preferred_time",
+  "issue_type",
+  "pain_level",
+  "treatment",
+  "budget_band",
+  "timeline",
+  "disclaimer"
+];
+
+/** Fields rendered elsewhere on the card (header, range figure, footnote). */
+const DETAIL_HIDDEN_FIELDS = [
+  "summary",
+  "service_type",
+  "estimate_low",
+  "estimate_high",
+  "currency",
+  "disclaimer"
+];
 
 function formatValue(value: unknown): string {
   if (typeof value === "string") {
@@ -27,43 +58,57 @@ function formatValue(value: unknown): string {
   return "";
 }
 
-function formatCurrency(result: QuoteResult): string | null {
-  const premium =
-    typeof result.premium === "number"
-      ? result.premium
-      : typeof result.annual_premium === "number"
-        ? result.annual_premium
-        : null;
+function formatEstimateRange(estimate: VisitEstimate): string | null {
+  const low =
+    typeof estimate.estimate_low === "number" ? estimate.estimate_low : null;
+  const high =
+    typeof estimate.estimate_high === "number" ? estimate.estimate_high : null;
 
-  if (premium === null) {
+  if (low === null && high === null) {
     return null;
   }
 
-  return new Intl.NumberFormat("en-US", {
+  const formatter = new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: result.currency || "USD"
-  }).format(premium);
+    currency: estimate.currency || "USD"
+  });
+
+  if (low !== null && high !== null) {
+    return `${formatter.format(low)}–${formatter.format(high)}`;
+  }
+
+  return formatter.format((low ?? high) as number);
 }
 
 function sanitizeFilePart(value: string): string {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "quote";
+    .replace(/^-+|-+$/g, "") || "estimate";
 }
 
-function buildExportFileName(quote: QuoteResult, extension: string): string {
-  const product = sanitizeFilePart(String(quote.product_type || "insurance"));
-  const coverage = sanitizeFilePart(String(quote.coverage_level || "quote"));
-  return `ivory-${product}-${coverage}.${extension}`;
+function buildExportFileName(estimate: VisitEstimate, extension: string): string {
+  const service = sanitizeFilePart(String(estimate.service_type || "visit"));
+  return `ivory-${service}-estimate.${extension}`;
 }
 
-function toPrettyJson(quote: QuoteResult): string {
-  return JSON.stringify(quote, null, 2);
+function dentalFieldRank(key: string): number {
+  const index = DENTAL_FIELD_ORDER.indexOf(key);
+  return index === -1 ? DENTAL_FIELD_ORDER.length : index;
 }
 
-function toCsv(quote: QuoteResult): string {
-  const rows = Object.entries(quote).map(([key, value]) => [
+function orderedEntries(estimate: VisitEstimate): [string, unknown][] {
+  return Object.entries(estimate).sort(
+    ([left], [right]) => dentalFieldRank(left) - dentalFieldRank(right)
+  );
+}
+
+function toPrettyJson(estimate: VisitEstimate): string {
+  return JSON.stringify(Object.fromEntries(orderedEntries(estimate)), null, 2);
+}
+
+function toCsv(estimate: VisitEstimate): string {
+  const rows = orderedEntries(estimate).map(([key, value]) => [
     key,
     Array.isArray(value)
       ? value.map((item) => formatValue(item)).join(", ")
@@ -91,57 +136,37 @@ function downloadTextFile(filename: string, content: string, type: string): void
   URL.revokeObjectURL(url);
 }
 
-interface QuoteCardProps {
-  quote: QuoteResult;
+interface VisitCardProps {
+  estimate: VisitEstimate;
 }
 
-const PRIORITY_FIELDS = [
-  "coverage_level",
-  "vehicle",
-  "vehicle_year",
-  "vehicle_make",
-  "vehicle_model",
-  "deductible",
-  "term_years",
-  "policy_type"
-];
-
-export function QuoteCard({ quote }: QuoteCardProps) {
+export function VisitCard({ estimate }: VisitCardProps) {
   const [exportStatus, setExportStatus] = useState<string | null>(null);
 
-  const premium = formatCurrency(quote);
-  const product = quote.product_type
-    ? `${String(quote.product_type)} insurance quote`
-    : "Insurance quote";
-  const coverage = quote.coverage_level ? String(quote.coverage_level) : null;
-
-  const filteredEntries = useMemo(() => {
-    return Object.entries(quote).filter(
-      ([key, value]) =>
-        ![
-          "summary",
-          "product_type",
-          "premium",
-          "annual_premium",
-          "currency",
-          "coverage_level"
-        ].includes(key) && value !== undefined && value !== null && value !== ""
-    );
-  }, [quote]);
+  const range = formatEstimateRange(estimate);
+  const heading = estimate.summary
+    ? String(estimate.summary)
+    : estimate.service_type
+      ? `${String(estimate.service_type)} visit estimate`
+      : "Visit estimate";
+  const service = estimate.service_type ? String(estimate.service_type) : null;
+  const disclaimer =
+    typeof estimate.disclaimer === "string" && estimate.disclaimer.trim()
+      ? estimate.disclaimer
+      : null;
 
   const entries = useMemo(() => {
-    return filteredEntries
-      .sort(([left], [right]) => {
-        const leftIndex = PRIORITY_FIELDS.indexOf(left);
-        const rightIndex = PRIORITY_FIELDS.indexOf(right);
-
-        return (leftIndex === -1 ? 999 : leftIndex) - (rightIndex === -1 ? 999 : rightIndex);
-      })
-      .slice(0, 4);
-  }, [filteredEntries]);
+    return orderedEntries(estimate).filter(
+      ([key, value]) =>
+        !DETAIL_HIDDEN_FIELDS.includes(key) &&
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+    );
+  }, [estimate]);
 
   async function handleCopyJson(): Promise<void> {
-    const json = toPrettyJson(quote);
+    const json = toPrettyJson(estimate);
     try {
       await navigator.clipboard.writeText(json);
       setExportStatus("JSON copied");
@@ -152,8 +177,8 @@ export function QuoteCard({ quote }: QuoteCardProps) {
 
   function handleDownloadJson(): void {
     downloadTextFile(
-      buildExportFileName(quote, "json"),
-      toPrettyJson(quote),
+      buildExportFileName(estimate, "json"),
+      toPrettyJson(estimate),
       "application/json;charset=utf-8"
     );
     setExportStatus("JSON downloaded");
@@ -161,8 +186,8 @@ export function QuoteCard({ quote }: QuoteCardProps) {
 
   function handleDownloadCsv(): void {
     downloadTextFile(
-      buildExportFileName(quote, "csv"),
-      toCsv(quote),
+      buildExportFileName(estimate, "csv"),
+      toCsv(estimate),
       "text/csv;charset=utf-8"
     );
     setExportStatus("CSV downloaded");
@@ -171,12 +196,12 @@ export function QuoteCard({ quote }: QuoteCardProps) {
   return (
     <section className="ui-scale-in min-w-0 overflow-hidden rounded-xl border border-line bg-white shadow-sm">
       <div className="flex items-center justify-between gap-3 border-b border-line bg-soft/50 px-4 py-3">
-        <p className="min-w-0 truncate text-sm font-semibold capitalize text-ink">
-          {product}
+        <p className="min-w-0 truncate text-sm font-semibold text-ink">
+          {heading}
         </p>
-        {coverage ? (
+        {service ? (
           <span className="shrink-0 rounded-full bg-teal-tint px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-teal">
-            {coverage}
+            {service}
           </span>
         ) : null}
       </div>
@@ -197,14 +222,18 @@ export function QuoteCard({ quote }: QuoteCardProps) {
         </dl>
       ) : null}
 
-      {premium ? (
+      {range ? (
         <div className="flex items-baseline justify-between border-t border-line px-4 py-3">
-          <span className="text-sm font-semibold text-ink">Premium</span>
+          <span className="text-sm font-semibold text-ink">Estimated cost</span>
           <span className="font-[family-name:var(--font-display)] text-xl text-teal">
-            {premium}
-            <span className="ml-1 font-sans text-xs text-muted">/yr</span>
+            {range}
+            <span className="ml-1 font-sans text-xs text-muted">range</span>
           </span>
         </div>
+      ) : null}
+
+      {disclaimer ? (
+        <p className="px-4 pb-3 text-[11px] leading-4 text-muted">{disclaimer}</p>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-1.5 px-4 pb-4">

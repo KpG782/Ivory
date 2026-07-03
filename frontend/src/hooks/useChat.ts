@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ChatMessage,
-  QuoteResult,
   SavedChatSession,
-  SessionSnapshot
+  SessionSnapshot,
+  VisitEstimate
 } from "../types";
 import { parseSseData, parseSseStream } from "../lib/sse";
 
 const STORAGE_KEY = "ivory-session-id";
 const SNAPSHOT_STORAGE_KEY = "ivory-session-snapshot";
-const QUOTE_STORAGE_KEY = "ivory-latest-quote";
+const ESTIMATE_STORAGE_KEY = "ivory-latest-estimate";
 const MESSAGES_STORAGE_KEY = "ivory-current-messages";
 const HISTORY_STORAGE_KEY = "ivory-chat-history";
 const CHAT_ENDPOINT = "/api/chat";
@@ -22,7 +22,7 @@ const INITIAL_WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "Ask a policy question or start a quote. The assistant will keep track of the quote flow if you interrupt it.",
+    "Ask a dental question or set up a visit. The assistant will keep track of your intake if you interrupt it.",
   streaming: false,
   kind: "info"
 };
@@ -44,7 +44,7 @@ function isSessionSnapshot(value: unknown): value is SessionSnapshot {
   return !!value && typeof value === "object";
 }
 
-function isQuoteResult(value: unknown): value is QuoteResult {
+function isVisitEstimate(value: unknown): value is VisitEstimate {
   return !!value && typeof value === "object";
 }
 
@@ -87,7 +87,9 @@ function normalizeSavedSessions(value: unknown): SavedChatSession[] {
       sessionSnapshot: isSessionSnapshot(entry.sessionSnapshot)
         ? entry.sessionSnapshot
         : null,
-      quoteResult: isQuoteResult(entry.quoteResult) ? entry.quoteResult : null
+      visitEstimate: isVisitEstimate(entry.visitEstimate)
+        ? entry.visitEstimate
+        : null
     }));
 }
 
@@ -141,70 +143,64 @@ function extractText(payload: unknown): string | null {
   return null;
 }
 
-function looksLikeQuoteResult(value: Record<string, unknown>): value is QuoteResult {
+function looksLikeVisitEstimate(value: Record<string, unknown>): value is VisitEstimate {
   return (
-    "premium" in value ||
-    "annual_premium" in value ||
-    "product_type" in value ||
-    "coverage_level" in value ||
-    "term_years" in value
+    "estimate_low" in value ||
+    "estimate_high" in value ||
+    "service_type" in value
   );
 }
 
-function extractQuoteResult(payload: unknown): QuoteResult | null {
+function extractVisitEstimate(payload: unknown): VisitEstimate | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }
 
   const record = payload as Record<string, unknown>;
-  const direct =
-    record.quote_result ?? record.quote ?? record.result ?? record.quoteResult;
+  const direct = record.visit_estimate ?? record.visitEstimate ?? record.result;
 
   if (direct && typeof direct === "object") {
-    return direct as QuoteResult;
+    return direct as VisitEstimate;
   }
 
-  if (looksLikeQuoteResult(record)) {
-    return record as QuoteResult;
+  if (looksLikeVisitEstimate(record)) {
+    return record as VisitEstimate;
   }
 
   return null;
 }
 
-function summarizeQuoteResult(result: QuoteResult): string {
-  const premium =
-    typeof result.premium === "number"
-      ? result.premium
-      : typeof result.annual_premium === "number"
-        ? result.annual_premium
-        : null;
-  const currency = result.currency || "USD";
+function summarizeVisitEstimate(estimate: VisitEstimate): string {
+  const low = typeof estimate.estimate_low === "number" ? estimate.estimate_low : null;
+  const high =
+    typeof estimate.estimate_high === "number" ? estimate.estimate_high : null;
+  const currency = estimate.currency || "USD";
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency
+  });
   const amount =
-    premium === null
-      ? "Quote calculated"
-      : new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency
-        }).format(premium);
-  const product = result.product_type
-    ? String(result.product_type)
-    : "insurance";
-  const coverage = result.coverage_level ? ` ${String(result.coverage_level)}` : "";
+    low === null || high === null
+      ? "Estimate calculated"
+      : `${formatter.format(low)}–${formatter.format(high)}`;
+  const service = estimate.service_type
+    ? String(estimate.service_type)
+    : "visit";
 
-  return `${product}${coverage} quote ready. ${amount}.`;
+  return `${service} estimate ready. ${amount}.`;
 }
 
 function makeAssistantMessage(
   id: string,
   content = "",
-  quoteResult: QuoteResult | null = null
+  visitEstimate: VisitEstimate | null = null
 ): ChatMessage {
   return {
     id,
     role: "assistant",
     content,
     streaming: true,
-    quoteResult
+    visitEstimate
   };
 }
 
@@ -214,9 +210,9 @@ function toMessageText(data: unknown, fallback: string): string {
     return text;
   }
 
-  const quote = extractQuoteResult(data);
-  if (quote) {
-    return summarizeQuoteResult(quote);
+  const estimate = extractVisitEstimate(data);
+  if (estimate) {
+    return summarizeVisitEstimate(estimate);
   }
 
   return fallback;
@@ -310,7 +306,7 @@ function buildSavedSession(
   sessionId: string,
   messages: ChatMessage[],
   sessionSnapshot: SessionSnapshot | null,
-  quoteResult: QuoteResult | null
+  visitEstimate: VisitEstimate | null
 ): SavedChatSession {
   return {
     sessionId,
@@ -319,7 +315,7 @@ function buildSavedSession(
     updatedAt: new Date().toISOString(),
     messages: sanitizeMessages(messages),
     sessionSnapshot,
-    quoteResult
+    visitEstimate
   };
 }
 
@@ -330,7 +326,7 @@ export function useChat() {
   const [isSending, setIsSending] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [quoteResult, setQuoteResult] = useState<QuoteResult | null>(null);
+  const [visitEstimate, setVisitEstimate] = useState<VisitEstimate | null>(null);
   const [sessionSnapshot, setSessionSnapshot] = useState<SessionSnapshot | null>(null);
   const [statusText, setStatusText] = useState("Ready");
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -348,14 +344,14 @@ export function useChat() {
       current === storedSessionId ? current : storedSessionId
     );
     const storedSnapshot = readJsonStorage<unknown>(SNAPSHOT_STORAGE_KEY, null);
-    const storedQuote = readJsonStorage<unknown>(QUOTE_STORAGE_KEY, null);
+    const storedEstimate = readJsonStorage<unknown>(ESTIMATE_STORAGE_KEY, null);
     const storedMessages = readJsonStorage<unknown>(MESSAGES_STORAGE_KEY, [
       INITIAL_WELCOME_MESSAGE
     ]);
     const storedHistory = readJsonStorage<unknown>(HISTORY_STORAGE_KEY, []);
 
     setSessionSnapshot(isSessionSnapshot(storedSnapshot) ? storedSnapshot : null);
-    setQuoteResult(isQuoteResult(storedQuote) ? storedQuote : null);
+    setVisitEstimate(isVisitEstimate(storedEstimate) ? storedEstimate : null);
     setMessages(normalizeMessages(storedMessages));
     setSavedSessions(normalizeSavedSessions(storedHistory));
     setHasHydrated(true);
@@ -388,10 +384,13 @@ export function useChat() {
       window.localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
     }
 
-    if (quoteResult) {
-      window.localStorage.setItem(QUOTE_STORAGE_KEY, JSON.stringify(quoteResult));
+    if (visitEstimate) {
+      window.localStorage.setItem(
+        ESTIMATE_STORAGE_KEY,
+        JSON.stringify(visitEstimate)
+      );
     } else {
-      window.localStorage.removeItem(QUOTE_STORAGE_KEY);
+      window.localStorage.removeItem(ESTIMATE_STORAGE_KEY);
     }
 
     if (sessionId === INITIAL_SESSION_ID) {
@@ -402,16 +401,16 @@ export function useChat() {
       readJsonStorage<unknown>(HISTORY_STORAGE_KEY, [])
     );
 
-    const nextHistory = quoteResult && hasMeaningfulConversation(messages)
+    const nextHistory = visitEstimate && hasMeaningfulConversation(messages)
       ? [
-          buildSavedSession(sessionId, messages, sessionSnapshot, quoteResult),
+          buildSavedSession(sessionId, messages, sessionSnapshot, visitEstimate),
           ...existingHistory.filter((entry) => entry.sessionId !== sessionId)
         ].slice(0, 20)
       : existingHistory.filter((entry) => entry.sessionId !== sessionId).slice(0, 20);
 
     window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
     setSavedSessions(nextHistory);
-  }, [hasHydrated, messages, quoteResult, sessionId, sessionSnapshot]);
+  }, [hasHydrated, messages, sessionId, sessionSnapshot, visitEstimate]);
 
   const stopGeneration = useCallback(() => {
     abortRef.current?.abort();
@@ -507,10 +506,10 @@ export function useChat() {
 
           if (event.event === "message_complete") {
             const finalText = toMessageText(payload, "");
-            const result = extractQuoteResult(payload);
+            const result = extractVisitEstimate(payload);
             const session = extractSessionSnapshot(payload);
             if (result) {
-              setQuoteResult(result);
+              setVisitEstimate(result);
             }
             if (session) {
               setSessionSnapshot(session);
@@ -520,7 +519,7 @@ export function useChat() {
               ...message,
               content: finalText || message.content,
               streaming: false,
-              quoteResult: result ?? message.quoteResult ?? null
+              visitEstimate: result ?? message.visitEstimate ?? null
             }));
 
             setStatusText("Ready");
@@ -610,18 +609,18 @@ export function useChat() {
     } finally {
       setMessages(
         createWelcomeMessage(
-          "The session has been reset. Start a new quote or ask a product question."
+          "The session has been reset. Set up a new visit or ask a dental question."
         )
       );
-      setQuoteResult(null);
+      setVisitEstimate(null);
       setSessionSnapshot({
         session_id: sessionId,
         mode: "conversational",
         intent: "question",
-        quote_step: "identify",
-        insurance_type: null,
+        intake_step: "identify",
+        service_type: null,
         current_field: null,
-        has_quote_result: false
+        has_visit_estimate: false
       });
       setIsResetting(false);
       setStatusText("Ready");
@@ -637,18 +636,18 @@ export function useChat() {
     setSessionId(next);
     setMessages(
       createWelcomeMessage(
-        "New session started. Ask a question or begin a fresh quote flow."
+        "New session started. Ask a question or set up a fresh visit."
       )
     );
-    setQuoteResult(null);
+    setVisitEstimate(null);
     setSessionSnapshot({
       session_id: next,
       mode: "conversational",
       intent: "question",
-      quote_step: "identify",
-      insurance_type: null,
+      intake_step: "identify",
+      service_type: null,
       current_field: null,
-      has_quote_result: false
+      has_visit_estimate: false
     });
     setError(null);
     setStatusText("Ready");
@@ -658,7 +657,9 @@ export function useChat() {
     stopGeneration();
     setSessionId(saved.sessionId);
     setMessages(normalizeMessages(saved.messages));
-    setQuoteResult(isQuoteResult(saved.quoteResult) ? saved.quoteResult : null);
+    setVisitEstimate(
+      isVisitEstimate(saved.visitEstimate) ? saved.visitEstimate : null
+    );
     setSessionSnapshot(
       isSessionSnapshot(saved.sessionSnapshot) ? saved.sessionSnapshot : null
     );
@@ -674,7 +675,7 @@ export function useChat() {
     sessionId,
     sessionLabel,
     messages,
-    quoteResult,
+    visitEstimate,
     sessionSnapshot,
     savedSessions,
     error,

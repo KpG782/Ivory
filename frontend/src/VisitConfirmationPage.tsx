@@ -2,29 +2,41 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { QuoteCard } from "./components/QuoteCard";
+import { VisitCard } from "./components/VisitCard";
 import { IvoryLogo } from "./components/IvoryLogo";
 import { useChat } from "./hooks/useChat";
 
-function formatInsuranceLabel(value: string | null | undefined): string {
+const CLINIC_PHONE_DISPLAY = "(415) 555-0100";
+const CLINIC_PHONE_HREF = "tel:+14155550100";
+
+const SERVICE_LABELS: Record<string, string> = {
+  cleaning: "Cleaning Visit",
+  emergency: "Emergency Visit",
+  cosmetic: "Cosmetic Consultation"
+};
+
+function formatServiceLabel(value: string | null | undefined): string {
   if (!value) {
-    return "Insurance";
+    return "Visit";
   }
-  return `${value.charAt(0).toUpperCase()}${value.slice(1)} Quote`;
+  return (
+    SERVICE_LABELS[value] ??
+    `${value.charAt(0).toUpperCase()}${value.slice(1)} Visit`
+  );
 }
 
-export default function QuoteConfirmationPage() {
+export default function VisitConfirmationPage() {
   const chat = useChat();
 
   const isConfirmationReady = useMemo(() => {
     return (
-      chat.sessionSnapshot?.quote_step === "confirm" &&
+      chat.sessionSnapshot?.intake_step === "confirm" &&
       chat.sessionSnapshot?.mode === "transactional" &&
-      !!chat.quoteResult
+      !!chat.visitEstimate
     );
-  }, [chat.quoteResult, chat.sessionSnapshot]);
+  }, [chat.visitEstimate, chat.sessionSnapshot]);
 
-  const pageTitle = formatInsuranceLabel(chat.sessionSnapshot?.insurance_type);
+  const pageTitle = formatServiceLabel(chat.sessionSnapshot?.service_type);
 
   return (
     <main className="min-h-screen px-3 py-4 text-[#191c1e] sm:px-4 sm:py-6 md:px-8">
@@ -74,7 +86,7 @@ export default function QuoteConfirmationPage() {
             <div className="flex justify-end">
               <div className="max-w-[80%] rounded-[1.35rem] bg-[#1f1f1f] px-5 py-3 text-white shadow-[0_10px_30px_rgba(15,23,42,0.14)]">
                 <p className="font-medium">
-                  Confirm my quote for the current policy and coverage options.
+                  Confirm my appointment request with the current visit details.
                 </p>
               </div>
             </div>
@@ -87,7 +99,7 @@ export default function QuoteConfirmationPage() {
               <div className="flex-1 space-y-6">
                 <div className="max-w-2xl rounded-[1.5rem] rounded-bl-sm border border-black/8 bg-white/90 p-6 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
                   <p className="text-lg leading-relaxed text-slate-900">
-                    Great news. Your personalized quote is ready for final review.
+                    Great news. Your visit estimate is ready for final review.
                   </p>
                 </div>
 
@@ -95,23 +107,25 @@ export default function QuoteConfirmationPage() {
                   <div className="flex flex-col gap-3 bg-[#f6f4ee] px-5 py-5 sm:px-6 md:flex-row md:items-center md:justify-between md:px-8">
                     <div>
                       <h3 className="font-[family-name:var(--font-display)] text-xl font-extrabold text-slate-900">
-                        Insurance Quote Summary
+                        Appointment summary
                       </h3>
                       <p className="text-sm text-slate-500">
-                        Quote ID: {chat.sessionSnapshot?.session_id ?? "pending"}
+                        Request ID: {chat.sessionSnapshot?.session_id ?? "pending"}
                       </p>
                     </div>
                     <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 font-bold text-emerald-950">
                       <span className="material-symbols-outlined text-sm">verified</span>
-                      Best Value
+                      Estimate ready
                     </div>
                   </div>
 
                   <div className="p-5 sm:p-6 md:p-8">
-                    {chat.quoteResult ? <QuoteCard quote={chat.quoteResult} /> : null}
+                    {chat.visitEstimate ? (
+                      <VisitCard estimate={chat.visitEstimate} />
+                    ) : null}
                   </div>
 
-                  <div className="flex flex-col gap-3 px-5 pb-6 pt-2 sm:px-6 md:flex-row md:gap-4 md:px-8 md:pb-8">
+                  <div className="flex flex-col gap-3 px-5 pb-4 pt-2 sm:px-6 md:flex-row md:gap-4 md:px-8">
                     <button
                       type="button"
                       className="flex-1 rounded-full bg-[#1f1f1f] px-6 py-4 font-[family-name:var(--font-display)] font-bold text-white transition hover:bg-black"
@@ -119,7 +133,7 @@ export default function QuoteConfirmationPage() {
                         void chat.sendMessage("accept");
                       }}
                     >
-                      Accept &amp; Buy Now
+                      Accept &amp; Book Visit
                     </button>
                     <button
                       type="button"
@@ -128,15 +142,20 @@ export default function QuoteConfirmationPage() {
                         void chat.sendMessage("adjust");
                       }}
                     >
-                      Adjust Coverage
+                      Adjust Details
                     </button>
-                    <button
-                      type="button"
+                    <a
+                      href={CLINIC_PHONE_HREF}
                       className="px-4 py-3 text-left font-[family-name:var(--font-display)] font-bold text-slate-500 transition hover:text-slate-900 md:px-6 md:py-4 md:text-center"
                     >
-                      Talk to an Agent
-                    </button>
+                      Call the Clinic
+                    </a>
                   </div>
+                  <p className="px-5 pb-6 text-xs leading-5 text-slate-500 sm:px-6 md:px-8 md:pb-8">
+                    Estimates are educational, not a diagnosis or final price.
+                    Prefer to talk it through? Call the front desk at{" "}
+                    {CLINIC_PHONE_DISPLAY}.
+                  </p>
                 </div>
               </div>
             </div>
@@ -147,9 +166,9 @@ export default function QuoteConfirmationPage() {
               Confirmation isn&apos;t ready yet
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-              This page is only meant for the backend&apos;s quote confirmation state.
-              Start or continue a quote in chat until the backend returns a session
-              snapshot with <code>quote_step = confirm</code>.
+              This page is only meant for the backend&apos;s visit confirmation
+              state. Start or continue a visit intake in chat until the backend
+              returns a session snapshot with <code>intake_step = confirm</code>.
             </p>
             <div className="mt-6">
               <Link
