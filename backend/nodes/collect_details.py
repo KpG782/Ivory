@@ -15,19 +15,45 @@ NAME_DENYLIST = {
     "banana",
 }
 # Domain words that signal the user asked a new clinic question instead of
-# answering the free-text field they were prompted for.
-TEXT_DOMAIN_BLOCKLIST = (
-    "appointment",
-    "booking",
-    "estimate",
-    "cleaning",
-    "whitening",
-    "dentist",
-    "dental",
-    "tooth",
-    "teeth",
-    "cost",
-    "price",
+# answering the free-text field they were prompted for. Matched as whole
+# tokens: "price" the word, never "Price" inside the surname "Sarah Price".
+# For patient_name the value is rejected only when EVERY token is a domain
+# word ("teeth whitening"), so real surnames like Price/Costa still pass.
+TEXT_DOMAIN_BLOCKLIST = frozenset(
+    {
+        "appointment",
+        "booking",
+        "estimate",
+        "cleaning",
+        "whitening",
+        "dentist",
+        "dental",
+        "tooth",
+        "teeth",
+        "cost",
+        "price",
+    }
+)
+# Leading words that mark a sentence-shaped answer as a question even without
+# a question mark ("do you offer implants").
+QUESTION_LEAD_TOKENS = frozenset(
+    {
+        "do",
+        "does",
+        "can",
+        "could",
+        "who",
+        "what",
+        "when",
+        "where",
+        "why",
+        "how",
+        "is",
+        "are",
+        "will",
+        "would",
+        "should",
+    }
 )
 # Multi-word or synonym answers that normalize to a canonical enum value.
 ENUM_SYNONYMS = {
@@ -160,6 +186,12 @@ def collect_details(state: dict[str, Any], message: str | None = None) -> dict[s
         try:
             if service_type == "cleaning":
                 collected = _merge_cleaning_multi_field_input(collected, current_field, message)
+            else:
+                parsed_sequential = _merge_sequential_input(
+                    fields, collected, current_field, message
+                )
+                if parsed_sequential is not None:
+                    collected = parsed_sequential
             field_spec = _get_field_spec(fields, current_field)
             if current_field not in collected:
                 collected[current_field] = _coerce_value(
@@ -204,18 +236,22 @@ def _merge_cleaning_multi_field_input(
     raw: str,
 ) -> dict[str, Any]:
     next_collected = dict(collected)
-    lowered = raw.lower()
     compact = re.sub(r"\s+", " ", raw).strip()
     fields = FIELD_SPECS["cleaning"]
 
-    parsed_sequential = _merge_cleaning_sequential_input(fields, next_collected, current_field, raw)
+    parsed_sequential = _merge_sequential_input(fields, next_collected, current_field, raw)
     if parsed_sequential is not None:
         next_collected = parsed_sequential
 
     email_match = re.search(_EMAIL_TOKEN_RE, compact)
-    year_value = _find_valid_visit_year(compact)
-    status_value = _find_insurance_status(lowered)
-    time_match = re.search(_TIME_RE, lowered)
+    # Secondary fields are only ever absorbed from the text OUTSIDE the email
+    # token: "maria.1990@example.com" must not set last_visit_year=1990 and
+    # "sunday.morning@example.com" must not set preferred_time.
+    scan_text = re.sub(_EMAIL_TOKEN_RE, " ", compact)
+    scan_lowered = scan_text.lower()
+    year_value = _find_valid_visit_year(scan_text)
+    status_value = _find_insurance_status(scan_lowered)
+    time_match = re.search(_TIME_RE, scan_lowered)
 
     if current_field == "patient_name":
         if email_match:
@@ -272,12 +308,13 @@ def _merge_cleaning_multi_field_input(
     return next_collected
 
 
-def _merge_cleaning_sequential_input(
+def _merge_sequential_input(
     fields: list[dict[str, Any]],
     collected: dict[str, Any],
     current_field: str,
     raw: str,
 ) -> dict[str, Any] | None:
+    """Fill consecutive fields from one comma-separated reply, any service."""
     if "," not in raw:
         return None
 
@@ -409,10 +446,18 @@ def _coerce_value(
             raise ValueError("Please enter a valid email address, for example maria@example.com.")
         coerced = candidate
     elif field_type == "phone":
-        digits = re.sub(r"\D", "", value)
-        if len(digits) < 7:
+        # Store just the phone number, not the sentence around it ("you can
+        # reach me at 555-201-7788 any time") — this value is forwarded to the
+        # CRM lead and the booking attendee on accept.
+        candidates = re.findall(r"\+?\d[\d\s().-]*\d", value)
+        best = max(
+            candidates,
+            key=lambda candidate: len(re.sub(r"\D", "", candidate)),
+            default=None,
+        )
+        if best is None or len(re.sub(r"\D", "", best)) < 7:
             raise ValueError("Please enter a phone number with at least 7 digits.")
-        coerced = re.sub(r"\s+", " ", value).strip()
+        coerced = re.sub(r"\s+", " ", best).strip()
     else:
         if allowed is not None:
             coerced = _normalize_enum_value(value)
@@ -456,7 +501,15 @@ def _clean_text_value(field_name: str, value: str, *, min_length: int | None = N
         raise ValueError("Please answer with the requested detail only.")
 
     lowered = normalized.lower()
-    if any(term in lowered for term in TEXT_DOMAIN_BLOCKLIST):
+    lower_alpha_tokens = [token.lower() for token in alpha_tokens]
+    if lower_alpha_tokens[0] in QUESTION_LEAD_TOKENS and len(lower_alpha_tokens) >= 3:
+        raise ValueError("Please enter the requested detail, not a new appointment question.")
+
+    domain_hits = [token for token in lower_alpha_tokens if token in TEXT_DOMAIN_BLOCKLIST]
+    if field_name == "patient_name":
+        if domain_hits and len(domain_hits) == len(lower_alpha_tokens):
+            raise ValueError("Please enter the requested detail, not a new appointment question.")
+    elif domain_hits:
         raise ValueError("Please enter the requested detail, not a new appointment question.")
 
     if len(alpha_tokens) > 6:

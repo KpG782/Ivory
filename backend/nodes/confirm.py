@@ -33,12 +33,18 @@ def confirm(state: dict, message: str) -> dict:
             (
                 f"Confirmed. I have finalized {summary}.\n\n"
                 f"Front desk actions:\n{action_lines}\n\n"
-                "Reply restart if you want to set up another visit."
+                "When you're ready for another visit, just say book a cleaning, "
+                "book an emergency visit, or book a cosmetic consultation."
             ),
         )
+        # The intake is complete: clear the answers and the estimate so the
+        # next intake starts from a clean slate and the UI stops showing
+        # "Estimate ready" for an already-accepted visit.
         state["mode"] = "conversational"
         state["intake_step"] = "identify"
         state["current_field"] = None
+        state["collected_data"] = {}
+        state["visit_estimate"] = None
         return state
 
     if action == "adjust":

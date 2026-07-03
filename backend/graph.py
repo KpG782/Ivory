@@ -69,6 +69,14 @@ def _apply_service_switch(state: ChatState, message: str) -> None:
     if service and service != current_type and mid_intake:
         _reset_intake_progress(state)
         state["service_type"] = service
+        return
+    # A fresh intake started from conversational mode (e.g. right after an
+    # accepted visit) must not inherit the previous patient's answers or a
+    # stale estimate — the new flow has to ask its own questions.
+    if not mid_intake and (state.get("collected_data") or state.get("visit_estimate")):
+        _reset_intake_progress(state)
+        if service:
+            state["service_type"] = service
 
 
 def _rag_node(state: ChatState) -> ChatState:

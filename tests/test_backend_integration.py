@@ -843,3 +843,117 @@ def test_emergency_accept_skips_email_and_reports_phone_contact(client: TestClie
         "the front desk will call instead." in message
     )
     assert "Resend (demo mode)" not in message
+
+
+# ---------------------------------------------------------------------------
+# Adversarial-review regressions (post-conversion hardening)
+# ---------------------------------------------------------------------------
+
+
+def test_midflow_question_with_booking_word_answers_then_resumes(client: TestClient) -> None:
+    """A '?' question mentioning 'appointment' must never hijack the intake."""
+    session_id = "review-hijack-session"
+    _run_flow(client, session_id, CLEANING_FLOW[:3])  # asking last_visit_year
+
+    events = _post_chat(client, session_id, "How much does a whitening appointment usually cost?")
+    message = events[-1]["data"]["message"]
+
+    assert "What year was your last dental visit? (e.g. 2024)" in message
+    session = main.SESSION_STORE[session_id]
+    assert session["service_type"] == "cleaning"
+    assert session["collected_data"]["patient_name"] == "Maria Santos"
+    assert session["collected_data"]["contact_email"] == "maria@example.com"
+
+
+def test_domain_word_surnames_are_valid_patient_names(client: TestClient) -> None:
+    """'Price'/'Costa' are common surnames, not appointment questions."""
+    for index, name in enumerate(["Sarah Price", "George Costa"]):
+        session_id = f"review-surname-{index}"
+        _post_chat(client, session_id, "I'd like to book a cleaning")
+        _post_chat(client, session_id, name)
+        assert main.SESSION_STORE[session_id]["collected_data"]["patient_name"] == name
+
+    # Pure domain-word or question-shaped answers are still rejected.
+    session_id = "review-surname-reject"
+    _post_chat(client, session_id, "I'd like to book a cleaning")
+    events = _post_chat(client, session_id, "do you offer implants")
+    assert "patient_name" not in main.SESSION_STORE[session_id]["collected_data"]
+    assert "What's the patient's full name?" in events[-1]["data"]["message"]
+
+
+def test_negated_confirm_reply_never_accepts(client: TestClient) -> None:
+    """'no, this is not ok' must not fire the front-desk integrations."""
+    session_id = "review-negation-session"
+    _run_flow(client, session_id, CLEANING_FLOW)
+
+    for rejection in ("no, this is not ok", "yesterday", "not good"):
+        events = _post_chat(client, session_id, rejection)
+        message = events[-1]["data"]["message"]
+        assert "Front desk actions:" not in message
+        assert "accept, adjust, or restart" in message
+        assert main.SESSION_STORE[session_id]["visit_estimate"] is not None
+
+    events = _post_chat(client, session_id, "accept")
+    assert "Front desk actions:" in events[-1]["data"]["message"]
+
+
+def test_name_containing_book_substring_is_collected(client: TestClient) -> None:
+    """'Booker Smith' must be stored, not rerouted as a booking request."""
+    session_id = "review-booker-session"
+    _post_chat(client, session_id, "I'd like to book a cleaning")
+    _post_chat(client, session_id, "Booker Smith")
+    assert main.SESSION_STORE[session_id]["collected_data"]["patient_name"] == "Booker Smith"
+
+
+def test_email_local_part_never_fills_other_fields(client: TestClient) -> None:
+    """Digits or day-part words inside the email must not be absorbed."""
+    session_id = "review-email-absorb-session"
+    _post_chat(client, session_id, "I'd like to book a cleaning")
+    _post_chat(client, session_id, "Maria Santos")
+    events = _post_chat(client, session_id, "maria.1990@example.com")
+
+    collected = main.SESSION_STORE[session_id]["collected_data"]
+    assert collected["contact_email"] == "maria.1990@example.com"
+    assert "last_visit_year" not in collected
+    assert "What year was your last dental visit? (e.g. 2024)" in events[-1]["data"]["message"]
+
+
+def test_accept_clears_intake_and_next_intake_starts_fresh(client: TestClient) -> None:
+    """An accepted visit must not leak answers or estimate into the next intake."""
+    session_id = "review-fresh-intake-session"
+    _run_flow(client, session_id, CLEANING_FLOW)
+    events = _post_chat(client, session_id, "accept")
+    session_payload = events[-1]["data"]["session"]
+    assert session_payload["has_visit_estimate"] is False
+
+    events = _post_chat(client, session_id, "book an emergency visit")
+    session = main.SESSION_STORE[session_id]
+    assert session["service_type"] == "emergency"
+    assert session["collected_data"] == {}
+    assert "What's the patient's full name?" in events[-1]["data"]["message"]
+
+
+def test_compact_input_fills_emergency_and_cosmetic(client: TestClient) -> None:
+    """The comma-separated multi-field reply works for every service."""
+    session_id = "review-compact-emergency"
+    _post_chat(client, session_id, "I need to book an emergency visit")
+    events = _post_chat(client, session_id, "Ken Garcia, 555-201-7788, toothache, 7, insured")
+    payload = events[-1]["data"]
+    assert payload["visit_estimate"] is not None
+    assert payload["visit_estimate"]["service_type"] == "emergency"
+
+    session_id = "review-compact-cosmetic"
+    _post_chat(client, session_id, "I want to book a cosmetic consultation")
+    events = _post_chat(client, session_id, "Maria Santos, maria@example.com, whitening, standard, asap")
+    payload = events[-1]["data"]
+    assert payload["visit_estimate"] is not None
+    assert payload["visit_estimate"]["service_type"] == "cosmetic"
+
+
+def test_phone_number_extracted_from_sentence(client: TestClient) -> None:
+    """The stored phone is the number itself, not the sentence around it."""
+    session_id = "review-phone-session"
+    _post_chat(client, session_id, "I need to book an emergency visit")
+    _post_chat(client, session_id, "Ken Garcia")
+    _post_chat(client, session_id, "you can reach me at 555-201-7788 any time")
+    assert main.SESSION_STORE[session_id]["collected_data"]["contact_phone"] == "555-201-7788"
