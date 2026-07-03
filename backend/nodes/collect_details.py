@@ -213,21 +213,21 @@ def _merge_cleaning_multi_field_input(
         next_collected = parsed_sequential
 
     email_match = re.search(_EMAIL_TOKEN_RE, compact)
-    year_match = re.search(_YEAR_RE, compact)
+    year_value = _find_valid_visit_year(compact)
     status_value = _find_insurance_status(lowered)
     time_match = re.search(_TIME_RE, lowered)
 
     if current_field == "patient_name":
         if email_match:
             next_collected.setdefault("contact_email", email_match.group(0))
-        if year_match:
-            next_collected.setdefault("last_visit_year", int(year_match.group(1)))
+        if year_value is not None:
+            next_collected.setdefault("last_visit_year", year_value)
         if status_value:
             next_collected.setdefault("insurance_status", status_value)
         if time_match:
             next_collected.setdefault("preferred_time", time_match.group(1))
 
-        if email_match or year_match or status_value or time_match:
+        if email_match or year_value is not None or status_value or time_match:
             remainder = compact
             for pattern in (_EMAIL_TOKEN_RE, _YEAR_RE, _TIME_RE, _STATUS_RE):
                 remainder = re.sub(pattern, "", remainder, flags=re.IGNORECASE)
@@ -244,16 +244,16 @@ def _merge_cleaning_multi_field_input(
     elif current_field == "contact_email":
         if email_match:
             next_collected.setdefault("contact_email", email_match.group(0))
-        if year_match:
-            next_collected.setdefault("last_visit_year", int(year_match.group(1)))
+        if year_value is not None:
+            next_collected.setdefault("last_visit_year", year_value)
         if status_value:
             next_collected.setdefault("insurance_status", status_value)
         if time_match:
             next_collected.setdefault("preferred_time", time_match.group(1))
 
     elif current_field == "last_visit_year":
-        if year_match:
-            next_collected.setdefault("last_visit_year", int(year_match.group(1)))
+        if year_value is not None:
+            next_collected.setdefault("last_visit_year", year_value)
         if status_value:
             next_collected.setdefault("insurance_status", status_value)
         if time_match:
@@ -314,6 +314,21 @@ def _merge_cleaning_sequential_input(
             break
 
     return next_collected
+
+
+def _find_valid_visit_year(compact: str) -> int | None:
+    """Extract a last-visit year only if it passes the field's own range rule.
+
+    The merge must never absorb a value that direct coercion would reject
+    (e.g. a future year), otherwise invalid input could advance the flow.
+    """
+    year_match = re.search(_YEAR_RE, compact)
+    if not year_match:
+        return None
+    year_value = int(year_match.group(1))
+    if 1901 <= year_value <= CURRENT_YEAR:
+        return year_value
+    return None
 
 
 def _find_insurance_status(lowered: str) -> str | None:
