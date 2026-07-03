@@ -34,12 +34,18 @@ const DETAIL_HIDDEN_FIELDS = [
   "disclaimer"
 ];
 
-function formatValue(value: unknown): string {
+/** Numbers that read as labels, not quantities — no thousands separators. */
+const UNGROUPED_NUMBER_FIELDS = new Set(["last_visit_year", "pain_level"]);
+
+function formatValue(value: unknown, field?: string): string {
   if (typeof value === "string") {
     return value;
   }
 
   if (typeof value === "number") {
+    if (field !== undefined && UNGROUPED_NUMBER_FIELDS.has(field)) {
+      return String(value);
+    }
     return new Intl.NumberFormat("en-US").format(value);
   }
 
@@ -48,7 +54,7 @@ function formatValue(value: unknown): string {
   }
 
   if (Array.isArray(value)) {
-    return value.map(formatValue).join(", ");
+    return value.map((item) => formatValue(item, field)).join(", ");
   }
 
   if (value && typeof value === "object") {
@@ -111,8 +117,8 @@ function toCsv(estimate: VisitEstimate): string {
   const rows = orderedEntries(estimate).map(([key, value]) => [
     key,
     Array.isArray(value)
-      ? value.map((item) => formatValue(item)).join(", ")
-      : formatValue(value)
+      ? value.map((item) => formatValue(item, key)).join(", ")
+      : formatValue(value, key)
   ]);
 
   const escapeCell = (cell: string) => `"${cell.replace(/"/g, "\"\"")}"`;
@@ -215,7 +221,7 @@ export function VisitCard({ estimate }: VisitCardProps) {
                 className="break-words text-right font-medium text-ink"
                 style={{ overflowWrap: "anywhere" }}
               >
-                {formatValue(value)}
+                {formatValue(value, key)}
               </dd>
             </div>
           ))}

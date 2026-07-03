@@ -18,8 +18,8 @@ while your team stays chairside.
 
 ## What is Ivory?
 
-Ivory is an AI front-desk / lead-intake agent built on a pattern designed for
-correctness, not vibes:
+Ivory is an AI front-desk / lead-intake agent for a dental clinic, built on a
+pattern designed for correctness, not vibes:
 
 > **Deterministic Orchestrator + RAG + Stateful Slot-Filling** — a state machine
 > drives control flow, the LLM only generates answer text, and a LangGraph
@@ -27,41 +27,40 @@ correctness, not vibes:
 
 Two coordinated behaviors live in one session:
 
-- **Conversational RAG** for knowledge questions, answered from a curated corpus
+- **Conversational RAG** for oral-health and clinic questions, answered from a
+  curated public-domain corpus (NIDCR + CDC) plus clinic docs
 - **Deterministic intake flows** that collect required fields step by step with
   field-level validation — and survive interruptions
 
-A patient can start booking, interrupt with a question, get an answer, and resume
-at the exact pending field. The backend is the single source of truth for both
-chat state and intake state.
+A patient can start booking a cleaning, interrupt with "what does a checkup
+include?", get an answer, and resume at the exact pending field. The backend is
+the single source of truth for both chat state and intake state.
 
 ## Project Status
 
-This codebase started as an insurance-assistant take-home and is being rebranded
-into Ivory for the dental vertical. Same architecture, new skin and corpus.
-
 | Piece | Status |
 |-------|--------|
-| Deterministic state machine, RAG, slot-filling, durable memory | ✅ Built and tested (41 green) |
+| Deterministic state machine, RAG, slot-filling, durable memory | ✅ Built and tested (44 green) |
+| Dental vertical: services, visit estimator, NIDCR/CDC corpus | ✅ Live (`docs/specs/DENTAL_VERTICAL_SPEC.md`) |
+| Front-desk integrations: Airtable CRM, Cal.com booking, Resend email | ✅ Built with offline dry-run mode (no keys required for demo) |
 | Brand + design system | ✅ `docs/branding/IVORY_BRAND.md`, `design-system/ivory/MASTER.md` |
-| Current running vertical | Insurance quotes (`auto`, `home`, `life`) — the original take-home vertical |
-| Dental vertical (NIDCR/CDC corpus, Cal.com booking, Airtable CRM, Resend email) | 🔜 In progress — research locked in `docs/DATASET_RESEARCH_DENTAL.md` |
 
-## Chat Modes
+The codebase started as an insurance-assistant take-home; the dental conversion
+kept the architecture and replaced the vertical (research and licensing
+decisions in `docs/DATASET_RESEARCH_DENTAL.md` — public-domain sources only,
+never ADA content).
 
-### Conversational mode
+## Services
 
-Used for knowledge questions. The backend retrieves knowledge-base chunks,
-generates an answer, and streams it back to the UI over SSE.
+| Service | Slots collected | Deterministic result |
+|---------|-----------------|----------------------|
+| `cleaning` — routine exam & cleaning | name, email, last visit year, insurance status, preferred time | visit-cost estimate range |
+| `emergency` — urgent visit | name, phone, issue type, pain level (0–10), insurance status | visit-cost estimate range |
+| `cosmetic` — consultation | name, email, treatment, budget band, timeline | treatment estimate range |
 
-### Transactional mode
-
-Used for intake flows. The backend identifies the product/service, collects
-required fields, validates them, computes a deterministic result, and moves the
-user into confirmation.
-
-The system is explicitly designed to move between these two modes without
-dropping session state.
+Estimates come from a deterministic fee schedule
+(`backend/services/visit_estimator.py`) — never from the LLM — and always carry
+an "educational estimate, not a diagnosis or final price" disclaimer.
 
 ## The Deterministic Flow
 
@@ -71,12 +70,17 @@ identify -> collect details -> validate -> confirm
 
 Behaviors the state machine guarantees:
 
-- explicit flow-start messages are routed into the transactional branch
-- bare field replies like `2019` stay in the transactional branch instead of drifting into RAG
-- compact inputs like `Toyota, Camry, 35, 0, standard` can fill multiple fields in sequence
-- a knowledge question mid-flow gets answered, then the exact resume prompt for the pending field is appended
-- `accept`, `adjust`, and `restart` are supported after a result is generated
+- explicit booking messages are routed into the transactional branch
+- bare field replies like `2024` stay in the transactional branch instead of drifting into RAG
+- compact inputs like `Maria Santos, maria@example.com, 2024, insured, morning` can fill multiple fields in sequence
+- an oral-health question mid-flow gets answered, then the exact resume prompt for the pending field is appended
+- `accept`, `adjust`, and `restart` are supported after an estimate is generated
 - invalid input never advances the flow step
+
+On `accept`, the deterministic front-desk layer fires three integrations —
+Airtable (lead), Cal.com (booking request), Resend (email confirmation) — and
+reports each outcome in chat. With no API keys configured, every integration
+runs in **dry-run mode**: no network I/O, deterministic demo output.
 
 ## Stack
 
@@ -88,6 +92,7 @@ Behaviors the state machine guarantees:
 | Retrieval | ChromaDB + sentence-transformers |
 | Frontend | Next.js App Router + React + Tailwind CSS |
 | Business logic | Deterministic Python (never LLM-generated) |
+| CRM / booking / email | Airtable + Cal.com + Resend (stdlib HTTP clients, dry-run without keys) |
 | Session persistence | In-memory with Redis support |
 
 ## High-Level Request Path
@@ -101,8 +106,11 @@ Browser -> Next.js UI -> /api/chat proxy -> FastAPI /chat
                      +---------------------+----------------------+
                      |                                            |
                      v                                            v
-                  RAG path                              transactional workflow
+                  RAG path                              transactional intake
          retrieve -> answer -> stream               identify -> collect -> validate -> confirm
+                                                                                        |
+                                                                              accept -> front desk
+                                                                          Airtable + Cal.com + Resend
 ```
 
 ## Project Structure
@@ -113,16 +121,18 @@ Browser -> Next.js UI -> /api/chat proxy -> FastAPI /chat
 │   ├── main.py
 │   ├── graph.py
 │   ├── state.py
-│   ├── nodes/
-│   ├── services/
-│   ├── knowledge_base/
+│   ├── nodes/               # router, identify_service, collect_details,
+│   │                        # validate_visit, confirm, rag
+│   ├── services/            # visit_estimator, front_desk, airtable,
+│   │                        # calcom, resend_email, llm, vectorstore
+│   ├── knowledge_base/      # 12 dental docs (NIDCR/CDC-grounded + clinic)
 │   └── requirements.txt
 ├── frontend/
-│   ├── app/
+│   ├── app/                 # routes incl. /visit-confirmation
 │   ├── src/
 │   └── package.json
-├── assets/brand/          # Ivory logo SVGs
-├── design-system/ivory/   # design tokens + component specs
+├── assets/brand/            # Ivory logo SVGs
+├── design-system/ivory/     # design tokens + component specs
 ├── docs/
 └── tests/
 ```
@@ -146,32 +156,41 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+### Integrations (optional)
+
+Copy `env.example` to `backend/.env` and fill in `AIRTABLE_API_KEY` /
+`AIRTABLE_BASE_ID`, `CALCOM_API_KEY` / `CALCOM_EVENT_TYPE_ID`, and
+`RESEND_API_KEY` to make `accept` create a real lead, booking request, and
+confirmation email. Leave them unset for deterministic dry-run demo output.
+
 ## Validation
 
 Backend integration coverage includes:
 
 - health and reset endpoints
-- all three intake flows end to end
+- all three intake flows end to end, through `accept` and the front-desk block
 - interruption and resume behavior
-- invalid input re-prompts
-- product switching mid-flow
+- invalid input re-prompts (numbers, enums, emails, phone, free-text guards)
+- service switching mid-flow
 - `adjust` and `restart`
-- protection against LLM misclassification of flow-start and field replies
+- protection against misclassification of flow-start and bare field replies
 - compact multi-field input handling
+- integration payload shapes (captured requests) and error degradation
 
 Run the backend test suite from the repo root:
 
 ```bash
-python -m pytest tests/test_backend_integration.py -q
+backend/.venv/bin/python -m pytest tests/ -q   # 44 passed
 ```
 
 ## Key Invariants
 
 - backend state is the source of truth
-- business results are deterministic, not LLM-generated
+- business results (visit estimates) are deterministic, not LLM-generated
 - invalid field input must not advance the flow step
 - mid-flow knowledge questions must not clear `collected_data`
 - flow-start intents must not be downgraded into generic RAG
+- integrations fire only on explicit `accept`, and never break the turn on failure
 - the frontend renders backend state; it never invents flow state on its own
 
 ## Brand & Design
@@ -182,8 +201,9 @@ python -m pytest tests/test_backend_integration.py -q
 
 ## Useful Docs
 
+- [Dental vertical spec](docs/specs/DENTAL_VERTICAL_SPEC.md)
 - [Engineering walkthrough](docs/ENGINEERING_WALKTHROUGH.md)
-- [Quote flow test checklist](docs/guides/QUOTE_FLOW_TEST_CHECKLIST.md)
+- [Intake flow test checklist](docs/guides/INTAKE_FLOW_TEST_CHECKLIST.md)
 - [ASCII architecture](docs/architecture/ASCII_ARCHITECTURE.md)
 - [Architecture decisions](docs/architecture/ARCHITECTURE_DECISIONS.md)
 - [Plain-English overview](docs/layman/OVERVIEW_IN_PLAIN_ENGLISH.md)
