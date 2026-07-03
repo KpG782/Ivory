@@ -3,41 +3,42 @@ from __future__ import annotations
 from typing import Any
 
 
-PRODUCT_LABELS = {
-    "auto": ("auto", "car", "vehicle", "driver", "motor"),
-    "home": ("home", "house", "property", "condo", "apartment"),
-    "life": ("life", "family", "term life"),
+SERVICE_LABELS = {
+    "emergency": ("emergency", "urgent", "broken tooth", "chipped"),
+    "cosmetic": ("cosmetic", "whitening", "veneers", "aligners", "smile makeover"),
+    "cleaning": ("cleaning", "checkup", "check-up", "check up", "exam", "hygiene"),
 }
 
 
-def identify_product(state: dict[str, Any], message: str) -> dict[str, Any]:
+def identify_service(state: dict[str, Any], message: str) -> dict[str, Any]:
     state["mode"] = "transactional"
-    state["quote_step"] = "identify"
+    state["intake_step"] = "identify"
 
-    insurance_type = detect_product(message) or state.get("insurance_type")
-    if not insurance_type:
+    service_type = detect_service(message) or state.get("service_type")
+    if not service_type:
         assistant_message = (
-            "Which type of insurance quote would you like: auto, home, or life?"
+            "Which type of visit would you like to set up: a cleaning, "
+            "an emergency visit, or a cosmetic consultation?"
         )
         state["current_field"] = None
         _append_assistant_message(state, assistant_message)
         return state
 
-    state["insurance_type"] = insurance_type
-    state["quote_step"] = "collect"
+    state["service_type"] = service_type
+    state["intake_step"] = "collect"
     state["current_field"] = None
     # Do not append a message here — collect_details (called immediately after in graph.py)
     # will emit the first field question, which becomes the visible response.
     return state
 
 
-def detect_product(message: str | None) -> str | None:
+def detect_service(message: str | None) -> str | None:
     if not message:
         return None
     lowered = message.lower()
-    for insurance_type, labels in PRODUCT_LABELS.items():
+    for service_type, labels in SERVICE_LABELS.items():
         if any(label in lowered for label in labels):
-            return insurance_type
+            return service_type
     return None
 
 

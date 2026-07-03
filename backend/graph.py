@@ -23,10 +23,17 @@ from langgraph.graph import END, START, StateGraph
 
 from nodes.collect_details import collect_details, get_field_prompt
 from nodes.confirm import confirm
-from nodes.identify_product import detect_product, identify_product
+from nodes.identify_service import detect_service, identify_service
 from nodes.rag import rag_answer
 from nodes.router import decide
 from state import ChatState, build_initial_state, clone_state
+
+
+SERVICE_FLOW_LABELS = {
+    "cleaning": "cleaning visit",
+    "emergency": "emergency visit",
+    "cosmetic": "cosmetic consultation",
+}
 
 
 # ── Nodes ───────────────────────────────────────────────────────────────────
@@ -42,58 +49,62 @@ def _router_node(state: ChatState) -> ChatState:
     latest_message = messages[-1].get("content", "")
     route = decide(working_state, latest_message)
 
-    # Starting a quote may also mean switching product mid-quote, which requires
-    # discarding the half-collected data for the old product. This is the only
-    # state mutation the router performs, and it is fully rule-driven.
-    if route == "start_quote":
-        _apply_product_switch(working_state, latest_message)
+    # Starting an intake may also mean switching service mid-intake, which
+    # requires discarding the half-collected data for the old service. This is
+    # the only state mutation the router performs, and it is fully rule-driven.
+    if route == "start_intake":
+        _apply_service_switch(working_state, latest_message)
 
     working_state["route"] = route
     return working_state
 
 
-def _apply_product_switch(state: ChatState, message: str) -> None:
-    product = detect_product(message)
-    current_type = state.get("insurance_type")
-    mid_quote = (
+def _apply_service_switch(state: ChatState, message: str) -> None:
+    service = detect_service(message)
+    current_type = state.get("service_type")
+    mid_intake = (
         state.get("mode") == "transactional"
-        and state.get("quote_step") in {"collect", "validate", "confirm"}
+        and state.get("intake_step") in {"collect", "validate", "confirm"}
     )
-    if product and product != current_type and mid_quote:
-        _reset_quote_progress(state)
-        state["insurance_type"] = product
+    if service and service != current_type and mid_intake:
+        _reset_intake_progress(state)
+        state["service_type"] = service
 
 
 def _rag_node(state: ChatState) -> ChatState:
-    """Answer a question, then (if mid-quote) re-ask the paused field — a real
+    """Answer a question, then (if mid-intake) re-ask the paused field — a real
     resume driven by checkpointed state, not a string-append trick."""
     working_state = ChatState(**rag_answer(clone_state(state)))
     if working_state.get("mode") != "transactional":
         return working_state
 
-    step = working_state.get("quote_step")
+    step = working_state.get("intake_step")
     if (
         step == "collect"
-        and working_state.get("insurance_type")
+        and working_state.get("service_type")
         and working_state.get("current_field")
     ):
+        service_type = str(working_state["service_type"])
+        service_label = SERVICE_FLOW_LABELS.get(service_type, service_type)
         _append_to_last_assistant_message(
             working_state,
-            f"\n\nNow, back to your {working_state['insurance_type']} quote — "
-            f"{get_field_prompt(working_state['insurance_type'], working_state['current_field'])}",
+            f"\n\nNow, back to your {service_label} intake — "
+            f"{get_field_prompt(service_type, working_state['current_field'])}",
         )
     elif step == "identify":
+        # Keep this menu identical to the one in nodes/identify_service.py.
         _append_to_last_assistant_message(
             working_state,
-            "\n\nNow, which insurance type would you like a quote for: auto, home, or life?",
+            "\n\nWhich type of visit would you like to set up: a cleaning, "
+            "an emergency visit, or a cosmetic consultation?",
         )
 
     return working_state
 
 
-def _identify_product_node(state: ChatState) -> ChatState:
+def _identify_service_node(state: ChatState) -> ChatState:
     latest_message = state.get("messages", [])[-1].get("content", "")
-    return ChatState(**identify_product(clone_state(state), latest_message))
+    return ChatState(**identify_service(clone_state(state), latest_message))
 
 
 def _collect_details_node(state: ChatState) -> ChatState:
@@ -103,10 +114,10 @@ def _collect_details_node(state: ChatState) -> ChatState:
     return ChatState(**collect_details(clone_state(state), message))
 
 
-def _validate_quote_node(state: ChatState) -> ChatState:
-    from nodes.validate_quote import validate_quote
+def _validate_visit_node(state: ChatState) -> ChatState:
+    from nodes.validate_visit import validate_visit
 
-    return ChatState(**validate_quote(clone_state(state)))
+    return ChatState(**validate_visit(clone_state(state)))
 
 
 def _confirm_node(state: ChatState) -> ChatState:
@@ -118,14 +129,14 @@ def _confirm_node(state: ChatState) -> ChatState:
 
 def _route_from_router(state: ChatState) -> Literal[
     "rag_answer",
-    "identify_product",
+    "identify_service",
     "collect_details",
     "confirm",
 ]:
     mapping = {
         "confirm": "confirm",
-        "start_quote": "identify_product",
-        "identify": "identify_product",
+        "start_intake": "identify_service",
+        "identify": "identify_service",
         "collect": "collect_details",
         "answer_then_resume": "rag_answer",
         "rag": "rag_answer",
@@ -134,24 +145,24 @@ def _route_from_router(state: ChatState) -> Literal[
 
 
 def _route_after_identify(state: ChatState) -> Literal["collect_details", "__end__"]:
-    return "collect_details" if state.get("quote_step") == "collect" else END
+    return "collect_details" if state.get("intake_step") == "collect" else END
 
 
-def _route_after_collect(state: ChatState) -> Literal["validate_quote", "__end__"]:
-    return "validate_quote" if state.get("quote_step") == "validate" else END
+def _route_after_collect(state: ChatState) -> Literal["validate_visit", "__end__"]:
+    return "validate_visit" if state.get("intake_step") == "validate" else END
 
 
 def _route_after_confirm(state: ChatState) -> Literal["collect_details", "__end__"]:
-    return "collect_details" if state.get("quote_step") == "collect" else END
+    return "collect_details" if state.get("intake_step") == "collect" else END
 
 
 def _build_graph() -> StateGraph:
     graph = StateGraph(ChatState)
     graph.add_node("router", _router_node)
     graph.add_node("rag_answer", _rag_node)
-    graph.add_node("identify_product", _identify_product_node)
+    graph.add_node("identify_service", _identify_service_node)
     graph.add_node("collect_details", _collect_details_node)
-    graph.add_node("validate_quote", _validate_quote_node)
+    graph.add_node("validate_visit", _validate_visit_node)
     graph.add_node("confirm", _confirm_node)
 
     graph.add_edge(START, "router")
@@ -160,23 +171,23 @@ def _build_graph() -> StateGraph:
         _route_from_router,
         {
             "rag_answer": "rag_answer",
-            "identify_product": "identify_product",
+            "identify_service": "identify_service",
             "collect_details": "collect_details",
             "confirm": "confirm",
         },
     )
     graph.add_edge("rag_answer", END)
     graph.add_conditional_edges(
-        "identify_product",
+        "identify_service",
         _route_after_identify,
         {"collect_details": "collect_details", END: END},
     )
     graph.add_conditional_edges(
         "collect_details",
         _route_after_collect,
-        {"validate_quote": "validate_quote", END: END},
+        {"validate_visit": "validate_visit", END: END},
     )
-    graph.add_edge("validate_quote", END)
+    graph.add_edge("validate_visit", END)
     graph.add_conditional_edges(
         "confirm",
         _route_after_confirm,
@@ -247,13 +258,13 @@ def session_count() -> int:
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
-def _reset_quote_progress(state: ChatState) -> None:
-    state["insurance_type"] = None
+def _reset_intake_progress(state: ChatState) -> None:
+    state["service_type"] = None
     state["collected_data"] = {}
-    state["quote_result"] = None
+    state["visit_estimate"] = None
     state["pending_question"] = None
     state["current_field"] = None
-    state["quote_step"] = "identify"
+    state["intake_step"] = "identify"
     state["mode"] = "transactional"
 
 

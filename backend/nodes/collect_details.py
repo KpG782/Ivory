@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 CURRENT_YEAR = datetime.now(UTC).year
-LOCATION_DENYLIST = {
+NAME_DENYLIST = {
     "zoo",
     "dog",
     "dogs",
@@ -14,110 +14,152 @@ LOCATION_DENYLIST = {
     "apple",
     "banana",
 }
+# Domain words that signal the user asked a new clinic question instead of
+# answering the free-text field they were prompted for.
+TEXT_DOMAIN_BLOCKLIST = (
+    "appointment",
+    "booking",
+    "estimate",
+    "cleaning",
+    "whitening",
+    "dentist",
+    "dental",
+    "tooth",
+    "teeth",
+    "cost",
+    "price",
+)
+# Multi-word or synonym answers that normalize to a canonical enum value.
+ENUM_SYNONYMS = {
+    "self pay": "self_pay",
+    "self-pay": "self_pay",
+    "cash": "self_pay",
+    "out of pocket": "self_pay",
+    "paying out of pocket": "self_pay",
+}
+
+_EMAIL_TOKEN_RE = r"[^@\s,]+@[^@\s,]+\.[^@\s,]+"
+_YEAR_RE = r"\b(19\d{2}|20\d{2})\b"
+_TIME_RE = r"\b(morning|afternoon|evening)\b"
+_STATUS_RE = r"\b(insured|self[- ]?pay|cash|out of pocket)\b"
 
 FIELD_SPECS: dict[str, list[dict[str, Any]]] = {
-    "auto": [
+    "cleaning": [
         {
-            "name": "vehicle_year",
-            "prompt": "What year is the vehicle? (e.g. 2019)",
+            "name": "patient_name",
+            "prompt": "What's the patient's full name? (e.g. Maria Santos)",
+            "type": "str",
+            "min_length": 2,
+        },
+        {
+            "name": "contact_email",
+            "prompt": "What email should we use for confirmations? (e.g. maria@example.com)",
+            "type": "email",
+        },
+        {
+            "name": "last_visit_year",
+            "prompt": "What year was your last dental visit? (e.g. 2024)",
             "type": "int",
             "min_value": 1901,
             "max_value": CURRENT_YEAR,
         },
-        {"name": "vehicle_make", "prompt": "What is the vehicle make? (e.g. Toyota)", "type": "str", "min_length": 2},
-        {"name": "vehicle_model", "prompt": "What is the vehicle model? (e.g. Camry)", "type": "str", "min_length": 2},
-        {"name": "driver_age", "prompt": "How old is the primary driver?", "type": "int", "min_value": 16, "max_value": 120},
         {
-            "name": "accidents_last_5yr",
-            "prompt": "How many accidents has the driver had in the last 5 years?",
+            "name": "insurance_status",
+            "prompt": "Do you have dental insurance, or are you paying out of pocket? (insured or self-pay)",
+            "type": "str",
+            "allowed": ["insured", "self_pay"],
+        },
+        {
+            "name": "preferred_time",
+            "prompt": "What time of day works best: morning, afternoon, or evening?",
+            "type": "str",
+            "allowed": ["morning", "afternoon", "evening"],
+        },
+    ],
+    "emergency": [
+        {
+            "name": "patient_name",
+            "prompt": "What's the patient's full name? (e.g. Maria Santos)",
+            "type": "str",
+            "min_length": 2,
+        },
+        {
+            "name": "contact_phone",
+            "prompt": "What phone number can we reach you at? (e.g. 555-201-7788)",
+            "type": "phone",
+        },
+        {
+            "name": "issue_type",
+            "prompt": "What's the problem: a toothache, chipped tooth, swelling, or a lost filling?",
+            "type": "str",
+            "allowed": ["toothache", "chipped_tooth", "swelling", "lost_filling"],
+        },
+        {
+            "name": "pain_level",
+            "prompt": "On a scale of 0 to 10, how bad is the pain right now?",
             "type": "int",
             "min_value": 0,
             "max_value": 10,
         },
         {
-            "name": "coverage_level",
-            "prompt": "Which coverage level do you want: basic, standard, or comprehensive?",
+            "name": "insurance_status",
+            "prompt": "Do you have dental insurance, or are you paying out of pocket? (insured or self-pay)",
             "type": "str",
-            "allowed": ["basic", "standard", "comprehensive"],
+            "allowed": ["insured", "self_pay"],
         },
     ],
-    "home": [
+    "cosmetic": [
         {
-            "name": "property_type",
-            "prompt": "Is the property a house, condo, or apartment?",
-            "type": "str",
-            "allowed": ["house", "condo", "apartment"],
-        },
-        {
-            "name": "location",
-            "prompt": "Which city or location is the property in?",
+            "name": "patient_name",
+            "prompt": "What's the patient's full name? (e.g. Maria Santos)",
             "type": "str",
             "min_length": 2,
         },
         {
-            "name": "estimated_value",
-            "prompt": "What is the estimated property value in USD? (e.g. 350000)",
-            "type": "float",
-            "min_value": 10000,
+            "name": "contact_email",
+            "prompt": "What email should we use for confirmations? (e.g. maria@example.com)",
+            "type": "email",
         },
         {
-            "name": "year_built",
-            "prompt": "What year was the property built?",
-            "type": "int",
-            "min_value": 1801,
-            "max_value": CURRENT_YEAR,
-        },
-        {
-            "name": "coverage_level",
-            "prompt": "Which coverage level do you want: basic, standard, or comprehensive?",
+            "name": "treatment",
+            "prompt": "Which treatment are you interested in: whitening, veneers, aligners, or bonding?",
             "type": "str",
-            "allowed": ["basic", "standard", "comprehensive"],
+            "allowed": ["whitening", "veneers", "aligners", "bonding"],
         },
-    ],
-    "life": [
-        {"name": "age", "prompt": "How old is the insured person?", "type": "int", "min_value": 18, "max_value": 85},
         {
-            "name": "health_status",
-            "prompt": "How would you describe health status: excellent, good, fair, or poor?",
+            "name": "budget_band",
+            "prompt": "Which budget band fits best: basic, standard, or premium?",
             "type": "str",
-            "allowed": ["excellent", "good", "fair", "poor"],
+            "allowed": ["basic", "standard", "premium"],
         },
-        {"name": "smoker", "prompt": "Is the insured a smoker? Reply yes or no.", "type": "bool"},
         {
-            "name": "coverage_amount",
-            "prompt": "What coverage amount do you want in USD? (e.g. 500000)",
-            "type": "float",
-            "min_value": 1,
-        },
-        {"name": "term_years", "prompt": "Which term length do you want: 10, 20, or 30 years?", "type": "int", "allowed": [10, 20, 30]},
-        {
-            "name": "coverage_level",
-            "prompt": "Which coverage level do you want: basic, standard, or comprehensive?",
+            "name": "timeline",
+            "prompt": "When would you like to start: asap, this month, or flexible?",
             "type": "str",
-            "allowed": ["basic", "standard", "comprehensive"],
+            "allowed": ["asap", "this_month", "flexible"],
         },
     ],
 }
 
 
 def collect_details(state: dict[str, Any], message: str | None = None) -> dict[str, Any]:
-    insurance_type = state.get("insurance_type")
-    if insurance_type not in FIELD_SPECS:
+    service_type = state.get("service_type")
+    if service_type not in FIELD_SPECS:
         _append_assistant_message(
             state,
-            "I still need to know the insurance type before collecting quote details.",
+            "I still need to know the visit type before collecting intake details.",
         )
-        state["quote_step"] = "identify"
+        state["intake_step"] = "identify"
         return state
 
-    fields = FIELD_SPECS[insurance_type]
+    fields = FIELD_SPECS[service_type]
     collected = dict(state.get("collected_data", {}))
     current_field = state.get("current_field") or _next_missing_field(fields, collected)
 
     if current_field and message and message.strip():
         try:
-            if insurance_type == "auto":
-                collected = _merge_auto_multi_field_input(collected, current_field, message)
+            if service_type == "cleaning":
+                collected = _merge_cleaning_multi_field_input(collected, current_field, message)
             field_spec = _get_field_spec(fields, current_field)
             if current_field not in collected:
                 collected[current_field] = _coerce_value(
@@ -134,7 +176,7 @@ def collect_details(state: dict[str, Any], message: str | None = None) -> dict[s
             prompt = _field_prompt(fields, current_field)
             _append_assistant_message(state, f"{exc} {prompt}")
             state["current_field"] = current_field
-            state["quote_step"] = "collect"
+            state["intake_step"] = "collect"
             return state
 
     next_field = _next_missing_field(fields, collected)
@@ -142,21 +184,21 @@ def collect_details(state: dict[str, Any], message: str | None = None) -> dict[s
     state["mode"] = "transactional"
     if next_field:
         state["current_field"] = next_field
-        state["quote_step"] = "collect"
+        state["intake_step"] = "collect"
         _append_assistant_message(state, _field_prompt(fields, next_field))
         return state
 
     state["current_field"] = None
-    state["quote_step"] = "validate"
+    state["intake_step"] = "validate"
     return state
 
 
-def get_field_prompt(insurance_type: str, field_name: str) -> str:
-    fields = FIELD_SPECS.get(insurance_type, [])
+def get_field_prompt(service_type: str, field_name: str) -> str:
+    fields = FIELD_SPECS.get(service_type, [])
     return _field_prompt(fields, field_name)
 
 
-def _merge_auto_multi_field_input(
+def _merge_cleaning_multi_field_input(
     collected: dict[str, Any],
     current_field: str,
     raw: str,
@@ -164,65 +206,73 @@ def _merge_auto_multi_field_input(
     next_collected = dict(collected)
     lowered = raw.lower()
     compact = re.sub(r"\s+", " ", raw).strip()
-    fields = FIELD_SPECS["auto"]
+    fields = FIELD_SPECS["cleaning"]
 
-    parsed_sequential = _merge_auto_sequential_input(fields, next_collected, current_field, raw)
+    parsed_sequential = _merge_cleaning_sequential_input(fields, next_collected, current_field, raw)
     if parsed_sequential is not None:
         next_collected = parsed_sequential
 
-    if current_field == "vehicle_year":
-        year_match = re.search(r"\b(19\d{2}|20\d{2})\b", compact)
-        coverage_match = re.search(r"\b(basic|standard|comprehensive)\b", lowered)
-        if coverage_match:
-            next_collected.setdefault("coverage_level", coverage_match.group(1))
+    email_match = re.search(_EMAIL_TOKEN_RE, compact)
+    year_match = re.search(_YEAR_RE, compact)
+    status_value = _find_insurance_status(lowered)
+    time_match = re.search(_TIME_RE, lowered)
 
-        remainder = compact
+    if current_field == "patient_name":
+        if email_match:
+            next_collected.setdefault("contact_email", email_match.group(0))
         if year_match:
-            remainder = re.sub(r"\b(19\d{2}|20\d{2})\b", "", remainder, count=1).strip()
-        remainder = re.sub(r"\bmodel\b", "", remainder, flags=re.IGNORECASE).strip()
-        if coverage_match:
-            remainder = re.sub(
-                r"\b(basic|standard|comprehensive)\b",
-                "",
-                remainder,
-                count=1,
-                flags=re.IGNORECASE,
-            ).strip()
+            next_collected.setdefault("last_visit_year", int(year_match.group(1)))
+        if status_value:
+            next_collected.setdefault("insurance_status", status_value)
+        if time_match:
+            next_collected.setdefault("preferred_time", time_match.group(1))
 
-        parts = [part for part in remainder.split() if part]
-        if parts:
-            next_collected.setdefault("vehicle_make", parts[0].title())
-        if len(parts) >= 2:
-            next_collected.setdefault("vehicle_model", " ".join(parts[1:]).title())
+        if email_match or year_match or status_value or time_match:
+            remainder = compact
+            for pattern in (_EMAIL_TOKEN_RE, _YEAR_RE, _TIME_RE, _STATUS_RE):
+                remainder = re.sub(pattern, "", remainder, flags=re.IGNORECASE)
+            remainder = re.sub(r"[,\s]+", " ", remainder).strip(" ,")
+            if remainder:
+                try:
+                    next_collected.setdefault(
+                        "patient_name",
+                        _clean_text_value("patient_name", remainder, min_length=2),
+                    )
+                except ValueError:
+                    pass
 
-    elif current_field == "vehicle_make":
-        cleaned = re.sub(r"\b(19\d{2}|20\d{2})\b", "", compact).strip()
-        cleaned = re.sub(r"\bmodel\b", "", cleaned, flags=re.IGNORECASE).strip()
-        parts = [part for part in cleaned.split() if part]
-        if parts:
-            next_collected.setdefault("vehicle_make", parts[0].title())
-        if len(parts) >= 2:
-            next_collected.setdefault("vehicle_model", " ".join(parts[1:]).title())
+    elif current_field == "contact_email":
+        if email_match:
+            next_collected.setdefault("contact_email", email_match.group(0))
+        if year_match:
+            next_collected.setdefault("last_visit_year", int(year_match.group(1)))
+        if status_value:
+            next_collected.setdefault("insurance_status", status_value)
+        if time_match:
+            next_collected.setdefault("preferred_time", time_match.group(1))
 
-    elif current_field == "vehicle_model":
-        cleaned = re.sub(r"\b(19\d{2}|20\d{2})\b", "", compact).strip()
-        cleaned = re.sub(r"\bmodel\b", "", cleaned, flags=re.IGNORECASE).strip()
-        if next_collected.get("vehicle_make"):
-            make_prefix = str(next_collected["vehicle_make"])
-            if cleaned.lower().startswith(make_prefix.lower()):
-                cleaned = cleaned[len(make_prefix):].strip()
-        if cleaned:
-            next_collected.setdefault("vehicle_model", cleaned.title())
+    elif current_field == "last_visit_year":
+        if year_match:
+            next_collected.setdefault("last_visit_year", int(year_match.group(1)))
+        if status_value:
+            next_collected.setdefault("insurance_status", status_value)
+        if time_match:
+            next_collected.setdefault("preferred_time", time_match.group(1))
 
-    elif current_field == "coverage_level":
-        coverage_match = re.search(r"\b(basic|standard|comprehensive)\b", lowered)
-        if coverage_match:
-            next_collected.setdefault("coverage_level", coverage_match.group(1))
+    elif current_field == "insurance_status":
+        if status_value:
+            next_collected.setdefault("insurance_status", status_value)
+        if time_match:
+            next_collected.setdefault("preferred_time", time_match.group(1))
+
+    elif current_field == "preferred_time":
+        if time_match:
+            next_collected.setdefault("preferred_time", time_match.group(1))
 
     return next_collected
 
 
-def _merge_auto_sequential_input(
+def _merge_cleaning_sequential_input(
     fields: list[dict[str, Any]],
     collected: dict[str, Any],
     current_field: str,
@@ -264,6 +314,14 @@ def _merge_auto_sequential_input(
             break
 
     return next_collected
+
+
+def _find_insurance_status(lowered: str) -> str | None:
+    if re.search(r"\binsured\b", lowered):
+        return "insured"
+    if re.search(r"\b(self[- ]?pay|cash|out of pocket)\b", lowered):
+        return "self_pay"
+    return None
 
 
 def _next_missing_field(fields: list[dict[str, Any]], collected: dict[str, Any]) -> str | None:
@@ -330,8 +388,21 @@ def _coerce_value(
             coerced = False
         else:
             raise ValueError("Please reply yes or no.")
+    elif field_type == "email":
+        candidate = value.strip().rstrip(".,;")
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", candidate):
+            raise ValueError("Please enter a valid email address, for example maria@example.com.")
+        coerced = candidate
+    elif field_type == "phone":
+        digits = re.sub(r"\D", "", value)
+        if len(digits) < 7:
+            raise ValueError("Please enter a phone number with at least 7 digits.")
+        coerced = re.sub(r"\s+", " ", value).strip()
     else:
-        coerced = _clean_text_value(field_name, value, min_length=min_length)
+        if allowed is not None:
+            coerced = _normalize_enum_value(value)
+        else:
+            coerced = _clean_text_value(field_name, value, min_length=min_length)
 
     if allowed is not None:
         if isinstance(coerced, str):
@@ -347,6 +418,17 @@ def _coerce_value(
     return coerced
 
 
+def _normalize_enum_value(value: str) -> str:
+    """Normalize an enum answer: drop articles, map synonyms, canonical snake_case."""
+    lowered = re.sub(r"\s+", " ", value).strip().lower().strip(".,!")
+    for article in ("a ", "an ", "the "):
+        if lowered.startswith(article):
+            lowered = lowered[len(article):]
+            break
+    canonical = ENUM_SYNONYMS.get(lowered, lowered)
+    return canonical.replace("-", "_").replace(" ", "_")
+
+
 def _clean_text_value(field_name: str, value: str, *, min_length: int | None = None) -> str:
     normalized = re.sub(r"\s+", " ", value).strip()
     token_matches = re.findall(r"[a-zA-Z0-9]+", normalized)
@@ -359,8 +441,8 @@ def _clean_text_value(field_name: str, value: str, *, min_length: int | None = N
         raise ValueError("Please answer with the requested detail only.")
 
     lowered = normalized.lower()
-    if any(term in lowered for term in ("quote", "coverage", "policy", "insurance")):
-        raise ValueError("Please enter the requested detail, not a new policy question.")
+    if any(term in lowered for term in TEXT_DOMAIN_BLOCKLIST):
+        raise ValueError("Please enter the requested detail, not a new appointment question.")
 
     if len(alpha_tokens) > 6:
         raise ValueError("Please keep the answer short and limited to the requested detail.")
@@ -368,22 +450,20 @@ def _clean_text_value(field_name: str, value: str, *, min_length: int | None = N
     if min_length is not None and len(normalized) < min_length:
         raise ValueError("Please enter a valid text value.")
 
-    if field_name == "location":
-        if len(normalized) < 3:
-            raise ValueError("Please enter a valid city or location.")
-        if len(alpha_tokens) < 1:
-            raise ValueError("Please enter a valid city or location.")
-        if len(alpha_tokens) > 3:
-            raise ValueError("Please enter only the city or location name.")
-        if normalized.lower().startswith(("i ", "my ", "we ", "they ")):
-            raise ValueError("Please enter only the city or location name.")
+    if field_name == "patient_name":
+        if lowered.startswith(("i ", "my ", "we ", "they ", "hello", "hi ")):
+            raise ValueError("Please enter only the patient's full name.")
         lower_tokens = {token.lower() for token in alpha_tokens}
         if {"like", "love"} & lower_tokens:
-            raise ValueError("Please enter a real city or location.")
-        if len(alpha_tokens) == 1 and next(iter(lower_tokens)) in LOCATION_DENYLIST:
-            raise ValueError("Please enter a real city or location, for example Makati, Manila, or Quezon City.")
-        if not re.fullmatch(r"[A-Za-z\s,.-]+", normalized):
-            raise ValueError("Please enter a valid city or location.")
+            raise ValueError("Please enter a real patient name.")
+        if lower_tokens & NAME_DENYLIST:
+            raise ValueError("Please enter a real patient name, for example Maria Santos.")
+        if len(alpha_tokens) < 2:
+            raise ValueError("Please enter the patient's full name, for example Maria Santos.")
+        if len(alpha_tokens) > 4:
+            raise ValueError("Please enter only the patient's full name.")
+        if not re.fullmatch(r"[A-Za-z\s,.'-]+", normalized):
+            raise ValueError("Please enter a valid patient name.")
 
     return normalized
 
@@ -394,22 +474,13 @@ def _range_error_message(
     min_value: float | int | None,
     max_value: float | int | None,
 ) -> str:
-    if field_name == "year_built" and min_value is not None and max_value is not None:
-        return f"Year built must be between {int(min_value)} and {int(max_value)}."
-    if field_name == "vehicle_year" and min_value is not None and max_value is not None:
-        return f"Vehicle year must be between {int(min_value)} and {int(max_value)}."
-    if field_name == "estimated_value" and min_value is not None:
+    if field_name == "last_visit_year" and min_value is not None and max_value is not None:
+        return f"Last dental visit year must be between {int(min_value)} and {int(max_value)}."
+    if field_name == "pain_level" and min_value is not None and max_value is not None:
         return (
-            "Please enter a more realistic property value in USD, "
-            "for example 100000 or 350000."
+            "Please enter a pain level between "
+            f"{int(min_value)} and {int(max_value)}."
         )
-    if field_name == "accidents_last_5yr" and min_value is not None and max_value is not None:
-        return (
-            "Please enter a realistic accident count between "
-            f"{int(min_value)} and {int(max_value)} for the last 5 years."
-        )
-    if field_name == "coverage_amount" and min_value is not None:
-        return "Please enter a positive coverage amount."
     if min_value is not None and max_value is not None:
         return f"Please enter a number between {int(min_value)} and {int(max_value)}."
     if min_value is not None:

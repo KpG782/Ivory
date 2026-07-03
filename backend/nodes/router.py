@@ -11,11 +11,11 @@ allowed to steer the conversation.
 
 Route labels returned by ``decide``:
 
-- ``"confirm"``            — accept / adjust / restart an existing quote
-- ``"start_quote"``        — begin a new quote or switch product
-- ``"identify"``           — user is choosing which product to quote
+- ``"confirm"``            — accept / adjust / restart an existing visit estimate
+- ``"start_intake"``       — begin a new intake or switch service
+- ``"identify"``           — user is choosing which visit type to set up
 - ``"collect"``            — user gave a field value (validate + store)
-- ``"answer_then_resume"`` — user paused mid-quote to ask a question
+- ``"answer_then_resume"`` — user paused mid-intake to ask a question
 - ``"rag"``                — answer a knowledge-base question
 """
 
@@ -24,34 +24,36 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
-from nodes.identify_product import detect_product
+from nodes.identify_service import detect_service
 
 # Deterministic keyword signals. These are the only words the router reads.
 RESTART_HINTS = ("restart", "start over", "reset")
 ADJUST_HINTS = ("adjust", "change", "modify", "update", "edit")
 AFFIRM_HINTS = ("yes", "accept", "confirm", "looks good", "approve", "ok", "okay", "good")
 PROGRESSION_HINTS = ("next", "continue", "go on", "proceed")
-# Explicit buying intent that may appear without the literal word "quote".
-QUOTE_INTENT_HINTS = ("price", "pricing", "buy", "purchase", "insure", "get a policy", "sign up")
+# Explicit booking words that start (or switch) an intake from any state.
+BOOKING_HINTS = ("book", "appointment", "schedule")
+# Explicit visit intent that may appear without a literal booking word.
+INTAKE_INTENT_HINTS = ("price", "pricing", "cost", "estimate", "come in", "set up a visit", "sign up")
 
-ACTIVE_QUOTE_STEPS = {"collect", "validate", "confirm"}
+ACTIVE_INTAKE_STEPS = {"collect", "validate", "confirm"}
 
 
 def decide(state: dict[str, Any], message: str) -> str:
     """Return the route for this turn. Pure function of (state, message)."""
     text = message.strip().lower()
     mode = state.get("mode", "conversational")
-    step = state.get("quote_step", "identify")
+    step = state.get("intake_step", "identify")
     current_field = state.get("current_field")
 
-    # P1 — An explicit restart while inside a quote always wins.
+    # P1 — An explicit restart while inside an intake always wins.
     if mode == "transactional" and _contains_any(text, RESTART_HINTS):
         return "confirm"
 
-    # P2 — An explicit "...quote..." request starts a quote or switches product,
-    #      from any state. This is how a mid-quote product switch is handled.
-    if "quote" in text:
-        return "start_quote"
+    # P2 — An explicit booking request starts an intake or switches service,
+    #      from any state. This is how a mid-intake service switch is handled.
+    if _contains_any(text, BOOKING_HINTS):
+        return "start_intake"
 
     # P3 — We are waiting for one specific field value (the core invariant).
     #      A literal "?" is the only signal that the user paused to ask a
@@ -62,21 +64,21 @@ def decide(state: dict[str, Any], message: str) -> str:
             return "answer_then_resume"
         return "collect"
 
-    # P4 — A quote is built and waiting for accept / adjust / restart.
+    # P4 — A visit estimate is built and waiting for accept / adjust / restart.
     if mode == "transactional" and step == "confirm":
         return "confirm"
 
-    # P5 — We asked which product to quote. A product word (or a simple
+    # P5 — We asked which visit type to set up. A service word (or a simple
     #      affirmation) selects it; anything else is a real question.
     if mode == "transactional" and step == "identify":
-        if detect_product(text) or _contains_any(text, AFFIRM_HINTS + PROGRESSION_HINTS):
+        if detect_service(text) or _contains_any(text, AFFIRM_HINTS + PROGRESSION_HINTS):
             return "identify"
         return "rag"
 
-    # P6 — Idle/conversational. Only an explicit, non-question buying intent
-    #      starts a quote; everything else is a knowledge question.
-    if "?" not in text and _contains_any(text, QUOTE_INTENT_HINTS):
-        return "start_quote"
+    # P6 — Idle/conversational. Only an explicit, non-question visit intent
+    #      starts an intake; everything else is a knowledge question.
+    if "?" not in text and _contains_any(text, INTAKE_INTENT_HINTS):
+        return "start_intake"
     return "rag"
 
 

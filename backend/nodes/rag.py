@@ -10,11 +10,13 @@ from streaming_context import get_on_token
 
 logger = logging.getLogger("ivory.rag")
 
-RAG_SYSTEM_PROMPT = """You are the Ivory insurance assistant.
+RAG_SYSTEM_PROMPT = """You are Ivory, the AI front desk for Ivory Dental Studio — warm, precise, and educational.
 Answer only using the provided knowledge base context.
-If the context is insufficient, say so plainly and do not invent policy details.
+You provide dental health education, never medical advice or a diagnosis.
+If the context is insufficient, say so plainly and do not invent clinic or dental details.
+Suggest booking a visit when it is relevant to the question, and cite the knowledge-base source.
+If the user is in the middle of an intake flow, answer the question and do not reset intake progress.
 Keep the answer concise, accurate, and friendly.
-If the user is in the middle of a quote flow, answer the question and do not reset quote progress.
 """
 
 
@@ -34,7 +36,7 @@ def rag_answer(
     kb_dir: str | None = None,
     persist_dir: str | None = None,
 ) -> dict[str, Any]:
-    """Answer a product question while preserving any transactional state."""
+    """Answer a dental question while preserving any transactional state."""
 
     state_copy: dict[str, Any] = dict(state)
     messages = _normalize_messages(state_copy.get("messages"))
@@ -45,7 +47,7 @@ def rag_answer(
         return _append_message(
             state_copy,
             messages,
-            "I could not identify a question to answer. Please ask about a policy, coverage, or quote topic.",
+            "I could not identify a question to answer. Please ask about our services, pricing, or booking a visit.",
             [],
             fallback_used=True,
             error="Missing question text for RAG response.",
@@ -252,28 +254,38 @@ def _format_fallback_answer(query: str, retrieved: Sequence[RetrievedChunk]) -> 
 def _direct_fallback_answer(query: str, retrieved: Sequence[RetrievedChunk]) -> str | None:
     combined = " ".join(chunk.content.lower() for chunk in retrieved[:3])
 
-    if "comprehensive" in query:
-        if any(term in combined for term in ("theft", "vandalism", "weather", "fire", "non-collision")):
+    if "toothache" in query:
+        if any(term in combined for term in ("toothache", "rinse", "floss", "pain")):
             return (
-                "Comprehensive coverage generally includes non-collision damage such as "
-                "theft, vandalism, fire, and weather-related damage."
+                "For a toothache, rinse with warm water, gently floss to remove trapped food, "
+                "and have a dentist look at it promptly — persistent pain can signal decay or infection."
             )
 
-    if "what insurance products" in query or "types of insurance" in query or "what do you offer" in query:
-        if all(term in combined for term in ("auto", "home", "life")):
-            return "Ivory offers auto insurance, home insurance, and life insurance."
+    if "what dental services" in query or "what services do you offer" in query or "what do you offer" in query:
+        if all(term in combined for term in ("cleaning", "emergency", "cosmetic")):
+            return (
+                "Ivory Dental Studio offers routine exams and cleanings, emergency dental visits, "
+                "and cosmetic consultations."
+            )
 
-    if "deductible" in query:
+    if "whitening" in query:
+        if any(term in combined for term in ("whitening", "bleach", "peroxide")):
+            return (
+                "Teeth whitening lightens tooth color using peroxide-based agents; results vary "
+                "and temporary sensitivity is common, so an exam first is recommended."
+            )
+
+    if "sealant" in query:
         return (
-            "A deductible is the amount the policyholder pays before covered property or vehicle "
-            "damage benefits apply."
+            "Dental sealants are thin protective coatings applied to the chewing surfaces of "
+            "back teeth to help prevent cavities."
         )
 
-    if "flood" in query and "home" in query:
-        return "Standard home insurance usually does not cover flood damage unless separate flood coverage exists."
-
-    if "beneficiar" in query:
-        return "A beneficiary is the person or entity selected to receive the life insurance death benefit."
+    if "knocked" in query and "tooth" in query:
+        return (
+            "For a knocked-out tooth, keep it moist — place it back in the socket without "
+            "touching the root, or keep it in milk — and see a dentist immediately."
+        )
 
     return None
 

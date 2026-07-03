@@ -113,7 +113,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Ivory Insurance Assistant", lifespan=lifespan)
+app = FastAPI(title="Ivory Dental Front Desk", lifespan=lifespan)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -143,7 +143,7 @@ async def debug() -> JSONResponse:
     kb_status: dict[str, Any] = {}
     try:
         index = ensure_knowledge_base_index()
-        probe = search_knowledge_base("what insurance products do you offer", top_k=3)
+        probe = search_knowledge_base("what dental services do you offer", top_k=3)
         kb_status = {
             "ok": True,
             "backend": index.backend,
@@ -248,7 +248,7 @@ async def chat(request: Request, payload: ChatRequest) -> StreamingResponse:
             yield _format_sse("error", {"message": "No assistant response was generated."})
             return
 
-        # For deterministic responses (field prompts, validation errors, quote results)
+        # For deterministic responses (field prompts, validation errors, visit estimates)
         # no LLM was called, so no tokens were streamed. Simulate word-by-word streaming
         # to keep a consistent UX for all response types.
         if not tokens_emitted["any"]:
@@ -260,7 +260,7 @@ async def chat(request: Request, payload: ChatRequest) -> StreamingResponse:
             "message_complete",
             {
                 "message": assistant_message,
-                "quote_result": next_state.get("quote_result"),
+                "visit_estimate": next_state.get("visit_estimate"),
                 "session": _public_session_state(next_state),
                 "session_id": payload.session_id,
                 "trace_id": next_state.get("trace_id"),
@@ -291,11 +291,11 @@ def _public_session_state(state: ChatState) -> dict[str, Any]:
         "session_id": state.get("session_id"),
         "mode": state.get("mode"),
         "intent": state.get("intent"),
-        "quote_step": state.get("quote_step"),
-        "insurance_type": state.get("insurance_type"),
+        "intake_step": state.get("intake_step"),
+        "service_type": state.get("service_type"),
         "current_field": state.get("current_field"),
         "trace_id": state.get("trace_id"),
-        "has_quote_result": bool(state.get("quote_result")),
+        "has_visit_estimate": bool(state.get("visit_estimate")),
     }
 
 
