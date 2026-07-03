@@ -383,8 +383,8 @@ def _rerank_results(
         score += source_overlap * 0.2
         score += min(content_overlap, 8) * 0.08
 
-        if "offer" in query_tokens and "insurance" in query_tokens:
-            if {"auto", "home", "life"} & content_tokens:
+        if "offer" in query_tokens and {"service", "services", "treatment", "treatments"} & query_tokens:
+            if {"cleaning", "emergency", "cosmetic"} & content_tokens:
                 score += 0.35
 
         reranked.append((score, result))
