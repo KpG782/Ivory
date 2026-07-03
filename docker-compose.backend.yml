@@ -13,6 +13,18 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-meta-llama/llama-3.1-8b-instruct}
       HF_TOKEN: ${HF_TOKEN:-}
+      # Front-desk integrations (optional — leave unset for dry-run demo mode).
+      # Airtable CRM: https://airtable.com/developers/web/api/create-records
+      # AIRTABLE_API_KEY: ${AIRTABLE_API_KEY:-}
+      # AIRTABLE_BASE_ID: ${AIRTABLE_BASE_ID:-}
+      # AIRTABLE_TABLE_NAME: ${AIRTABLE_TABLE_NAME:-Leads}
+      # Cal.com booking: https://cal.com/docs/api-reference/v2/bookings/create-a-booking
+      # CALCOM_API_KEY: ${CALCOM_API_KEY:-}
+      # CALCOM_EVENT_TYPE_ID: ${CALCOM_EVENT_TYPE_ID:-}
+      # CLINIC_TIMEZONE: ${CLINIC_TIMEZONE:-UTC}
+      # Resend email: https://resend.com/docs/api-reference/emails/send-email
+      # RESEND_API_KEY: ${RESEND_API_KEY:-}
+      # RESEND_FROM: ${RESEND_FROM:-Ivory <onboarding@resend.dev>}
     volumes:
       - ivory_backend_data:/data
     healthcheck:
