@@ -33,6 +33,7 @@ load_project_env()
 CALCOM_BOOKINGS_URL = "https://api.cal.com/v2/bookings"
 CALCOM_API_VERSION = "2024-08-13"
 DEFAULT_TIMEZONE = "UTC"
+DEFAULT_FALLBACK_EMAIL = "front-desk@ivory-dental.example"
 DEFAULT_TIMEOUT_SECONDS = 10.0
 INTEGRATION_NAME = "Cal.com booking"
 
@@ -89,9 +90,16 @@ def create_booking(
             detail="Cal.com booking could not be requested (CALCOM_EVENT_TYPE_ID must be an integer).",
         )
 
-    attendee: dict[str, str] = {"name": attendee_name, "timeZone": timezone_name}
-    if attendee_email:
-        attendee["email"] = attendee_email
+    # Cal.com v2 requires an attendee email. Phone-only intakes (emergency)
+    # collect no email, so fall back to a configurable clinic inbox — without
+    # it, every emergency booking would 400. Configure CALCOM_FALLBACK_EMAIL
+    # to route these to a real address the front desk monitors.
+    fallback_email = os.getenv("CALCOM_FALLBACK_EMAIL", "").strip() or DEFAULT_FALLBACK_EMAIL
+    attendee: dict[str, str] = {
+        "name": attendee_name,
+        "email": attendee_email or fallback_email,
+        "timeZone": timezone_name,
+    }
     if attendee_phone:
         attendee["phoneNumber"] = attendee_phone
 

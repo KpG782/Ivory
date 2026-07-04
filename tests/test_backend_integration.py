@@ -957,3 +957,45 @@ def test_phone_number_extracted_from_sentence(client: TestClient) -> None:
     _post_chat(client, session_id, "Ken Garcia")
     _post_chat(client, session_id, "you can reach me at 555-201-7788 any time")
     assert main.SESSION_STORE[session_id]["collected_data"]["contact_phone"] == "555-201-7788"
+
+
+def test_question_at_confirm_step_never_wipes_estimate(client: TestClient) -> None:
+    """A booking-word question on a finished estimate is answered, not a switch."""
+    session_id = "review-confirm-question"
+    _run_flow(client, session_id, CLEANING_FLOW)
+    assert main.SESSION_STORE[session_id]["intake_step"] == "confirm"
+
+    events = _post_chat(client, session_id, "How much does a whitening appointment cost?")
+    session = main.SESSION_STORE[session_id]
+    assert session["visit_estimate"] is not None
+    assert session["service_type"] == "cleaning"
+    assert session["intake_step"] == "confirm"
+
+
+def test_not_insured_is_stored_as_self_pay(client: TestClient) -> None:
+    """'I'm not insured' must not be read as insured (substring trap)."""
+    session_id = "review-not-insured"
+    _run_flow(client, session_id, CLEANING_FLOW[:4])  # through last_visit_year
+    _post_chat(client, session_id, "I'm not insured")
+    assert main.SESSION_STORE[session_id]["collected_data"]["insurance_status"] == "self_pay"
+
+
+def test_plain_name_does_not_absorb_other_fields(client: TestClient) -> None:
+    """A two-word name whose tokens look like enum values fills only the name."""
+    for name in ("Cash Morgan", "Morning Star"):
+        session_id = f"review-name-absorb-{name.split()[0]}"
+        _post_chat(client, session_id, "I'd like to book a cleaning")
+        _post_chat(client, session_id, name)
+        collected = main.SESSION_STORE[session_id]["collected_data"]
+        assert collected == {"patient_name": name}
+
+
+def test_negated_confirm_reply_does_not_adjust(client: TestClient) -> None:
+    """'No, don't change anything' contains 'change' but must not fire adjust."""
+    session_id = "review-negated-adjust"
+    _run_flow(client, session_id, CLEANING_FLOW)
+    events = _post_chat(client, session_id, "No, don't change anything")
+    session = main.SESSION_STORE[session_id]
+    assert session["visit_estimate"] is not None
+    assert session["collected_data"] != {}
+    assert "accept, adjust, or restart" in events[-1]["data"]["message"]

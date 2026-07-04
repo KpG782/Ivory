@@ -254,16 +254,22 @@ def _merge_cleaning_multi_field_input(
     time_match = re.search(_TIME_RE, scan_lowered)
 
     if current_field == "patient_name":
+        # Only treat a name answer as compact multi-field input when it carries
+        # an email token. Otherwise a plain two-word name ("Cash Morgan",
+        # "Morning Star") would have its tokens misread as insurance_status or
+        # preferred_time — the comma-separated path (_merge_sequential_input,
+        # already applied above) handles genuine structured input like
+        # "Maria Santos, maria@example.com, 2024, insured, morning".
         if email_match:
             next_collected.setdefault("contact_email", email_match.group(0))
-        if year_value is not None:
-            next_collected.setdefault("last_visit_year", year_value)
-        if status_value:
-            next_collected.setdefault("insurance_status", status_value)
-        if time_match:
-            next_collected.setdefault("preferred_time", time_match.group(1))
+            if year_value is not None:
+                next_collected.setdefault("last_visit_year", year_value)
+            if status_value:
+                next_collected.setdefault("insurance_status", status_value)
+            if time_match:
+                next_collected.setdefault("preferred_time", time_match.group(1))
 
-        if email_match or year_value is not None or status_value or time_match:
+        if email_match:
             remainder = compact
             for pattern in (_EMAIL_TOKEN_RE, _YEAR_RE, _TIME_RE, _STATUS_RE):
                 remainder = re.sub(pattern, "", remainder, flags=re.IGNORECASE)
@@ -369,10 +375,15 @@ def _find_valid_visit_year(compact: str) -> int | None:
 
 
 def _find_insurance_status(lowered: str) -> str | None:
+    # Negated or explicit self-pay phrasing wins first: "I'm not insured",
+    # "no insurance", "uninsured" all mean self-pay, and must never be read
+    # as insured just because the substring "insured" appears.
+    if re.search(r"\b(self[- ]?pay|cash|out of pocket|uninsured)\b", lowered):
+        return "self_pay"
+    if re.search(r"\b(no|not|without|don'?t\s+have)\b[\w\s']*\binsur", lowered):
+        return "self_pay"
     if re.search(r"\binsured\b", lowered):
         return "insured"
-    if re.search(r"\b(self[- ]?pay|cash|out of pocket)\b", lowered):
-        return "self_pay"
     return None
 
 

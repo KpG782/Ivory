@@ -87,10 +87,12 @@ def decide(state: dict[str, Any], message: str) -> str:
     if mode == "transactional" and _contains_any(text, RESTART_HINTS):
         return "confirm"
 
-    # P2 — A mid-intake question is ALWAYS answered-then-resumed, even when it
-    #      mentions a booking word ("How much does a whitening appointment
-    #      cost?" must never wipe collected data or switch the service).
-    if current_field and "?" in text:
+    # P2 — A question asked ANYWHERE inside a transactional flow (mid-collect
+    #      or on a finished estimate at the confirm step) is always answered,
+    #      never allowed to start/switch an intake or be misread as a decision.
+    #      "How much does a whitening appointment cost?" must never wipe the
+    #      collected data or the estimate.
+    if mode == "transactional" and "?" in text and (current_field or step == "confirm"):
         return "answer_then_resume"
 
     # P3 — An explicit non-question booking request starts an intake or
@@ -127,13 +129,15 @@ def interpret_confirmation(message: str) -> str | None:
     lowered = message.strip().lower()
     if _contains_any(lowered, RESTART_HINTS):
         return "restart"
-    if _contains_any(lowered, ADJUST_HINTS):
-        return "adjust"
-    # A negated reply ("no, this is not ok") must never be read as an accept —
-    # accept is the one action with external side effects.
+    # A negated reply must never commit or destroy state. "No, don't change
+    # anything" contains the adjust word "change" but is a rejection, and
+    # "no, this is not ok" contains the affirm word "ok" — both must re-prompt,
+    # not fire adjust (which wipes answers) or accept (which has side effects).
     tokens = set(re.findall(r"[a-z']+", lowered))
     if tokens & NEGATION_TOKENS:
         return None
+    if _contains_any(lowered, ADJUST_HINTS):
+        return "adjust"
     if _contains_any(lowered, AFFIRM_HINTS):
         return "accept"
     return None
