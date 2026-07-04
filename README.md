@@ -40,7 +40,7 @@ the single source of truth for both chat state and intake state.
 
 | Piece | Status |
 |-------|--------|
-| Deterministic state machine, RAG, slot-filling, durable memory | ✅ Built and tested (44 green) |
+| Deterministic state machine, RAG, slot-filling, durable memory | ✅ Built and tested (56 green) |
 | Dental vertical: services, visit estimator, NIDCR/CDC corpus | ✅ Live (`docs/specs/DENTAL_VERTICAL_SPEC.md`) |
 | Front-desk integrations: Airtable CRM, Cal.com booking, Resend email | ✅ Built with offline dry-run mode (no keys required for demo) |
 | Brand + design system | ✅ `docs/branding/IVORY_BRAND.md`, `design-system/ivory/MASTER.md` |
@@ -180,7 +180,7 @@ Backend integration coverage includes:
 Run the backend test suite from the repo root:
 
 ```bash
-backend/.venv/bin/python -m pytest tests/ -q   # 44 passed
+backend/.venv/bin/python -m pytest tests/ -q   # 56 passed
 ```
 
 ## Key Invariants

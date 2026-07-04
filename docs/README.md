@@ -7,15 +7,21 @@
 
 - `docs/specs`
   Source-of-truth product and implementation specs.
+  `DENTAL_VERTICAL_SPEC.md` is the binding spec for the current dental
+  front-desk vertical; the older specs predate that conversion and are kept
+  for history.
 
 - `docs/guides`
-  Setup, runbooks, and project-explainer docs.
+  Setup, runbooks, and project-explainer docs for the dental vertical.
+  The manual browser checklist is `INTAKE_FLOW_TEST_CHECKLIST.md`
+  (formerly `QUOTE_FLOW_TEST_CHECKLIST.md`).
 
 - `docs/audits`
   Current-state assessments and problem-focused audits.
 
 - `docs/plans`
-  Execution plans and next-step checklists.
+  Execution plans and next-step checklists. These are historical — they
+  predate the dental conversion and reference the retired insurance vertical.
 
 - `docs/reports`
   Completed work summaries and hardening reports.

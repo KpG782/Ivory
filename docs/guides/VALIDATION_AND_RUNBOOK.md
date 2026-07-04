@@ -20,6 +20,7 @@ It is written for a take-home style implementation workflow where the repo may s
 - Use `.env` only for configuration values and secrets.
 - Keep `.env` out of version control.
 - `env.example` must remain placeholder-only.
+- The front-desk integration keys (`AIRTABLE_API_KEY`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE_NAME`, `CALCOM_API_KEY`, `CALCOM_EVENT_TYPE_ID`, `RESEND_API_KEY`, `RESEND_FROM`) are optional — leave them unset for dry-run demo mode.
 
 ### Git ignore expectations
 
@@ -54,30 +55,37 @@ Because the repository currently contains spec and scaffolding material rather t
 ### Conversational RAG
 
 Validate that:
-- product questions use retrieval-backed answers
+- dental questions use retrieval-backed answers
 - retrieval failure degrades gracefully
 - answers stay grounded in the knowledge base
 
-### Quote flow
+### Intake flow
 
 Validate that:
-- auto, home, and life quote flows can start and finish
+- cleaning, emergency, and cosmetic intake flows can start and finish
 - required fields are collected step by step
 - invalid fields are re-prompted
-- quote calculation is deterministic
+- visit estimation is deterministic
 
 ### Mid-flow switching
 
 Validate that:
-- a product question during quote collection does not reset the flow
+- a dental question during intake collection does not reset the flow
 - collected data survives the interruption
 - the flow resumes at the previous step
+
+### Front-desk integrations
+
+Validate that:
+- Airtable, Cal.com, and Resend fire only on an explicit `accept`
+- missing keys produce `dry_run` results with no network calls
+- an integration error still lets the accept turn succeed
 
 ### Session management
 
 Validate that:
 - multiple turns work in one session
-- sequential quotes are possible
+- sequential intakes are possible
 - `POST /reset` clears only one session
 
 ### Streaming and UX
@@ -85,17 +93,17 @@ Validate that:
 Validate that:
 - `POST /chat` streams over SSE
 - `token`, `message_complete`, and `error` events are stable
-- the UI can render both streaming content and final quote payloads
+- the UI can render both streaming content and final visit-estimate payloads
 
 ## Manual Validation Scenarios
 
-1. Ask what insurance products are offered.
-2. Start an auto quote and answer each field.
-3. Start a home quote and answer each field.
-4. Start a life quote and answer each field.
-5. Ask a product question while a quote is in progress.
+1. Ask what dental services are offered.
+2. Start a cleaning intake and answer each field.
+3. Start an emergency intake and answer each field.
+4. Start a cosmetic intake and answer each field.
+5. Ask a dental question while an intake is in progress.
 6. Submit an invalid field value and verify targeted re-prompting.
-7. Accept a quote and start another one in the same session.
+7. Accept an estimate, verify the "Front desk actions" block, and start another intake in the same session.
 8. Reset a session and verify prior state is cleared.
 9. Force retrieval failure and verify graceful fallback behavior.
 10. Force OpenRouter failure and verify controlled error handling.
@@ -106,9 +114,12 @@ When implementation exists, automated checks should cover:
 - endpoint contract tests
 - state transition tests
 - retrieval fallback tests
-- quote calculator tests
+- visit estimator tests
+- front-desk integration tests (dry-run, payload, and error paths)
 - SSE event contract tests
 - reset/session isolation tests
+
+The current suite (`backend/.venv/bin/python -m pytest tests/ -q`) covers these areas with 52 passing tests.
 
 ## Expected Runtime Contracts
 
@@ -129,13 +140,14 @@ When implementation exists, automated checks should cover:
 
 ### `ChatState`
 
-The implementation should preserve the canonical state shape defined in `docs/specs/IMPLEMENTATION_SPEC.md`.
+The implementation should preserve the canonical state shape defined in `docs/specs/DENTAL_VERTICAL_SPEC.md` (`intake_step`, `service_type`, `collected_data`, `visit_estimate`, ...).
 
 ## Failure Handling Expectations
 
 - invalid input should not break the entire conversation
 - missing retrieval data should not crash the assistant
 - LLM errors should produce a user-safe recovery message
+- integration errors should degrade to an `error` line in the front-desk block, never a failed turn
 - state corruption should reset the affected session only
 
 ## Verification Notes For Reviewers

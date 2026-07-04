@@ -21,9 +21,9 @@ That setup is compatible with the current frontend because the Next proxy routes
 
 The repo now includes:
 
-- [Dockerfile](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/Dockerfile)
-- [.dockerignore](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/backend/.dockerignore)
-- [docker-compose.backend.yml](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/docker-compose.backend.yml)
+- `backend/Dockerfile`
+- `backend/.dockerignore`
+- `docker-compose.backend.yml`
 
 Build context should be the `backend/` folder.
 
@@ -83,6 +83,12 @@ Optional:
 - `HF_TOKEN`
 - `PORT=8000`
 
+Optional front-desk integrations (leave unset for safe dry-run demo mode — `accept` then reports "demo mode" lines and never touches the network):
+
+- `AIRTABLE_API_KEY`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE_NAME` (default `Leads`)
+- `CALCOM_API_KEY`, `CALCOM_EVENT_TYPE_ID`, `CLINIC_TIMEZONE` (default `UTC`)
+- `RESEND_API_KEY`, `RESEND_FROM` (default `Ivory <onboarding@resend.dev>`)
+
 ## Persistent Volume
 
 The backend writes its Chroma data to `CHROMA_PERSIST_DIR`.
@@ -134,13 +140,13 @@ The frontend proxy routes will then forward:
 
 ### 1. Session state is in memory
 
-The current backend keeps `SESSION_STORE` in memory.
+The current backend keeps conversation state in the in-process LangGraph checkpointer (`MemorySaver`).
 
 That means:
 
 - active sessions are lost if the container restarts
 - this is acceptable for a take-home/demo
-- do not scale to multiple replicas unless you add shared session storage
+- do not scale to multiple replicas unless you swap in a shared/persistent checkpointer
 
 For now, use one backend instance and one `uvicorn` worker.
 
@@ -165,9 +171,9 @@ Run these checks in order:
 3. Confirm `knowledge_base.ok=true`
 4. Confirm `llm.api_key_present=true`
 5. Open the Vercel frontend
-6. Ask `What insurance products do you offer?`
-7. Ask `I want a quote`
-8. Complete one `home` quote path
+6. Ask `What dental services do you offer?`
+7. Ask `I'd like to book an appointment`
+8. Complete one `cleaning` intake path and `accept` it (expect the "Front desk actions" dry-run block without integration keys)
 
 ## Recommended Final Architecture
 
@@ -185,7 +191,7 @@ Easypanel reverse proxy
 Docker container: kpg782/ivory-backend
   │
   ├─ FastAPI app
-  ├─ in-memory session store
+  ├─ in-memory LangGraph checkpointer (sessions)
   └─ Chroma persist dir mounted at /data/vectorstore
 ```
 

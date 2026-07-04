@@ -1,3 +1,5 @@
+> **Historical (insurance vertical).** This plan predates the dental conversion (see docs/specs/DENTAL_VERTICAL_SPEC.md). Kept for history; file paths and examples reference the retired insurance vertical.
+
 # Modern Chat UI Redesign — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

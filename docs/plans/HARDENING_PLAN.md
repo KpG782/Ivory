@@ -1,3 +1,5 @@
+> **Historical (insurance vertical).** This plan predates the dental conversion (see docs/specs/DENTAL_VERTICAL_SPEC.md). Kept for history; file paths and examples reference the retired insurance vertical.
+
 # Ivory Hardening Plan
 
 ## Purpose

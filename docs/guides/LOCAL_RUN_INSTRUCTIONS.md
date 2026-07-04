@@ -36,7 +36,25 @@ OPENROUTER_MODEL=meta-llama/llama-3.1-8b-instruct
 CHROMA_PERSIST_DIR=./backend/vectorstore
 ```
 
-The frontend does not need a local env file for normal development if the backend runs on `http://127.0.0.1:8000`.
+Optional front-desk integration env (leave unset for dry-run demo mode — no network calls on `accept`):
+
+```env
+AIRTABLE_API_KEY=
+AIRTABLE_BASE_ID=
+AIRTABLE_TABLE_NAME=Leads
+CALCOM_API_KEY=
+CALCOM_EVENT_TYPE_ID=
+CLINIC_TIMEZONE=UTC
+RESEND_API_KEY=
+RESEND_FROM=Ivory <onboarding@resend.dev>
+```
+
+The frontend does not need a local env file for normal development if the backend runs on `http://127.0.0.1:8000`, but the login screen requires credentials in `frontend/.env.local`:
+
+```env
+AUTH_USERNAME=your_demo_username
+AUTH_PASSWORD=your_demo_password
+```
 
 Only set this if your backend runs somewhere else:
 
@@ -93,24 +111,23 @@ http://localhost:3000
 
 Use the main page at `/`.
 
-- Ask a product question:
-  - Example: `What does comprehensive coverage include?`
-- Start a quote:
-  - Example: `I need a quote for auto insurance`
+- Ask a dental question:
+  - Example: `What does a routine cleaning include?`
+- Start an intake:
+  - Example: `I'd like to book a cleaning`
 - Continue answering the requested fields one by one
-- Watch the right-side state panel:
-  - `Mode`
-  - `Insurance Type`
-  - `Current Step`
-  - `Next Field`
-- Once a quote is generated, the quote card fills in and `Review Quote` becomes available
+- Watch the header chips:
+  - flow chip: `cleaning intake · collect` (service + step)
+  - status chip: `Knowledge mode` / `Collecting details` / `Estimate ready`
+- Once an estimate is generated, the visit card fills in with the cost range and collected details
 
 ### Confirmation flow
 
-Use `/quote-confirmation` only after the backend reaches confirm state.
+Use `/visit-confirmation` only after the backend reaches confirm state.
 
-- `Accept & Buy Now` sends `accept`
-- `Adjust Coverage` sends `adjust`
+- `Accept & Book Visit` sends `accept`
+- `Adjust Details` sends `adjust`
+- `Call the Clinic` is a `tel:` link to the front desk
 - If the backend is not ready, the page stays guarded and tells you to continue on the dashboard
 
 ## 4. Manual end-to-end test
@@ -120,64 +137,63 @@ Use `/quote-confirmation` only after the backend reaches confirm state.
 In the UI, send:
 
 ```text
-What types of insurance do you offer?
+What dental services do you offer?
 ```
 
 Expected:
 
-- assistant responds with product information
-- session mode stays conversational unless the backend switches into quote flow
+- assistant responds with the three services (cleanings, emergency visits, cosmetic consultations)
+- session mode stays conversational unless the backend switches into an intake flow
 
-### Test B: auto quote flow
+### Test B: cleaning intake flow
 
 In the UI, send these one at a time:
 
 ```text
-I need a quote for auto insurance
-2019
-Toyota
-Camry
-35
-0
-standard
+I'd like to book a cleaning
+Maria Santos
+maria@example.com
+2024
+insured
+morning
 ```
 
 Expected:
 
 - backend moves into transactional mode
 - the assistant asks for the next missing field each turn
-- a quote summary appears after the required details are collected
-- `Review Quote` becomes enabled
+- an estimate range appears after the required details are collected
+- the visit card and `/visit-confirmation` become usable
 
 ### Test C: confirm or adjust
 
-After the quote is ready:
+After the estimate is ready:
 
-1. Open `/quote-confirmation`
-2. Click `Accept & Buy Now`
+1. Open `/visit-confirmation`
+2. Click `Accept & Book Visit`
 
 Or:
 
-1. Open `/quote-confirmation`
-2. Click `Adjust Coverage`
+1. Open `/visit-confirmation`
+2. Click `Adjust Details`
 
 Expected:
 
 - the action is sent back into the same backend session
-- the assistant either confirms or returns to an adjustment flow
+- `accept` prints the "Front desk actions" block (dry-run lines without integration keys); `adjust` returns to the first intake field
 
-### Test D: switch intent mid-quote
+### Test D: switch intent mid-intake
 
-Start a quote, then ask:
+Start an intake, then ask:
 
 ```text
-What does comprehensive coverage cover?
+What should I do about a toothache?
 ```
 
 Expected:
 
-- the assistant answers the product question
-- the quote context is preserved
+- the assistant answers the dental question
+- the intake context is preserved
 - the flow resumes instead of restarting from scratch
 
 ## 5. Important notes
@@ -185,10 +201,11 @@ Expected:
 - The backend is the source of truth for flow state.
 - The frontend should only unlock confirmation when the backend session says:
   - `mode = transactional`
-  - `quote_step = confirm`
-  - `has_quote_result = true`
-- If OpenRouter is unavailable, some quote logic can still work because the app has local flow and quote handling.
-- Live product-answer quality depends on your `OPENROUTER_API_KEY` and network access.
+  - `intake_step = confirm`
+  - `has_visit_estimate = true`
+- If OpenRouter is unavailable, the intake flow still works because routing, field collection, validation, and estimation are all local deterministic logic.
+- Live dental-answer quality depends on your `OPENROUTER_API_KEY` and network access.
+- Without integration keys, `accept` runs Airtable/Cal.com/Resend in dry-run mode and never touches the network.
 
 ## 6. Useful commands
 
@@ -200,7 +217,7 @@ npm run typecheck
 npm run build
 ```
 
-Backend tests:
+Backend tests (56 tests):
 
 ```powershell
 cd ..
@@ -227,4 +244,4 @@ Check:
 
 ### Confirmation page says it is not ready
 
-That usually means the backend has not reached quote confirmation state yet. Continue the quote in the main dashboard until a quote is generated.
+That usually means the backend has not reached the confirm step yet. Continue the intake in the main dashboard until an estimate is generated.

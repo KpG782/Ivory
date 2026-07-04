@@ -7,12 +7,12 @@ No jargon. Read this first if you want the big picture before diving into the te
 
 ## What is Ivory?
 
-Ivory is a **chatbot for an insurance company**. It does two things:
+Ivory is a **chatbot that works as the front desk for a dental clinic**. It does two things:
 
-1. **Answers questions** — "What does comprehensive coverage include?" → it looks it up and gives you a grounded answer.
-2. **Gets you a quote** — "I want auto insurance" → it asks you step-by-step questions (car year, make, age, etc.) and spits out a price.
+1. **Answers questions** — "What does a routine cleaning include?" → it looks it up and gives you a grounded answer.
+2. **Sets up your visit** — "I'd like to book a cleaning" → it asks you step-by-step questions (name, email, when you last visited, etc.) and gives you an estimated cost range for the visit.
 
-The trick is it can do both **in the same conversation without losing your place**. You can be halfway through getting a car insurance quote, ask a random question about what "liability" means, get the answer, and the bot picks up exactly where it left off.
+The trick is it can do both **in the same conversation without losing your place**. You can be halfway through booking a cleaning, ask a random question about toothaches, get the answer, and the bot picks up exactly where it left off.
 
 ---
 
@@ -20,38 +20,40 @@ The trick is it can do both **in the same conversation without losing your place
 
 Think of it like a **restaurant order system**:
 
-- **The menu** = the knowledge base (12 documents about insurance products, claims, FAQs)
+- **The menu** = the knowledge base (12 documents about the clinic, its services, and dental health)
 - **The waiter** = the chatbot frontend you see in the browser
 - **The kitchen** = the FastAPI backend that processes everything
 - **The chef's workflow** = LangGraph (a state machine that tracks where you are in the process)
-- **The specialist cook** = the AI (OpenRouter / Llama 3.1 8B) that generates natural language answers
+- **The specialist cook** = the AI (via OpenRouter) that writes natural-language answers
 
 When you type a message:
 1. Your browser sends it to the Next.js server (a middleman)
 2. The middleman passes it to the Python backend
-3. The backend figures out what you want (question? starting a quote? answering a quote field?)
+3. The backend figures out what you want (question? starting a booking? answering a booking field?)
 4. It runs the right logic and streams the response back word by word
 5. Your screen updates in real time as words arrive
+
+And when you finally say "accept", the bot does three front-desk chores: saves you as a lead in the clinic's CRM (Airtable), requests an appointment slot (Cal.com), and drafts a confirmation email (Resend). If those services aren't configured, it safely pretends — "demo mode" — and tells you so.
 
 ---
 
 ## The Five Big Problems That Were Fixed
 
-The original version had five shortcuts that were fine for a demo but not good enough for real use. All five have been fixed:
+The original version had five shortcuts that were fine for a demo but not good enough for real use. All five have been addressed:
 
-### 1. Sessions Lost on Restart (FIXED)
-**Before:** All active chat sessions were stored in RAM. If the server restarted, every conversation vanished.
+### 1. Two Competing Notebooks for Conversations (FIXED)
+**Before:** The app kept conversation state in its own hand-rolled dictionary *and* in the workflow engine, and the two could drift apart.
 
-**After:** Sessions are now stored in **Redis** (a fast external database). Restart the server — sessions survive. No Redis available? It falls back to memory automatically.
+**After:** There is now exactly **one source of truth** — the workflow engine's built-in checkpointer stores each conversation, keyed by your session. Note: it's still in the server's memory, so a restart loses active chats; plugging in a database-backed checkpointer is the known next step for production.
 
-**Layman version:** Before, it was like writing notes on a whiteboard — erase it and they're gone. Now it's like writing in a notebook — restart doesn't lose anything.
+**Layman version:** Before, two people took notes on the same meeting and sometimes disagreed. Now there's one official notebook.
 
 ---
 
 ### 2. Any Website Could Talk to the Backend (FIXED)
 **Before:** CORS was set to `allow_origins=["*"]` — any website on the internet could send requests directly to the backend.
 
-**After:** Only allowed origins can talk to the backend (set via the `ALLOWED_ORIGINS` environment variable, defaulting to `http://localhost:3000`).
+**After:** Only allowed origins can talk to the backend (set via the `ALLOWED_ORIGINS` environment variable, defaulting to localhost for development).
 
 **Layman version:** Before, the back door was unlocked. Now it only opens for the right address.
 
@@ -69,7 +71,7 @@ The original version had five shortcuts that were fine for a demo but not good e
 ### 4. The Password Was Visible in the Browser (FIXED)
 **Before:** The login password was stored in a JavaScript variable that anyone could find by opening browser DevTools. It was literally in the client-side code.
 
-**After:** Login now works like a proper website. You type your username and password, it gets sent to the server, the server checks it privately, and if it's correct it sets a secure cookie. The password never touches client-side JavaScript.
+**After:** Login now works like a proper website. You type your username and password, it gets sent to the server, the server checks it privately, and if it's correct it sets a secure cookie. The password never touches client-side JavaScript. And because booking a visit involves personal details, the chat itself now also requires that cookie.
 
 **Layman version:** Before, the password was written on a sticky note on the front door. Now it's locked in a safe inside the building.
 
@@ -86,25 +88,27 @@ The original version had five shortcuts that were fine for a demo but not good e
 
 ## How the Chatbot Decides What You Want
 
-The bot uses a **3-layer system** to figure out your intent. Think of it as three people in a room:
+The bot uses a **fixed rulebook** — not the AI — to figure out what your message is. Think of a receptionist with a laminated checklist, read top to bottom:
 
-1. **The rules person** — checks obvious cases first. "Are you mid-quote and gave a short answer with no question mark? That's a field answer, done." No AI needed.
-2. **The AI** — if the rules person isn't sure, they ask the AI to classify: is this a question, a quote request, or a field answer?
-3. **The backup rules person** — if the AI fails or gives a bad answer, falls back to keyword matching.
+1. Did you say "restart" mid-booking? Start over.
+2. Are you mid-booking and asked a question (with a `?`)? Answer it, then return to the booking — even if the question mentions the word "appointment".
+3. Did you use a booking word like "book" or "schedule"? Start (or switch) a booking.
+4. Is the bot waiting on a specific answer from you? Treat your message as that answer and check it.
+5. Otherwise, it's a question for the knowledge base.
 
-This matters because small AI models often misclassify short answers like "home" or "2019" as questions. The rules person on layer 1 catches those before the AI even sees them.
+The same message in the same situation always gets the same decision. This matters because AI models often misclassify short answers like "morning" or "2024" as questions. Here the AI is never asked to make that call — it only writes the wording of knowledge answers.
 
 ---
 
-## How Quoting Works
+## How Visit Estimates Work
 
-When you want a quote:
-- The bot knows which insurance type you want (auto, home, life)
-- It asks you one field at a time (year → make → model → driver age → etc.)
-- Each answer is validated immediately: wrong type, out of range, or nonsense? It re-asks.
-- Once all fields are collected, a **deterministic calculator** computes the premium using fixed formulas
+When you want to set up a visit:
+- The bot knows which service you want (cleaning, emergency, or cosmetic)
+- It asks you one field at a time (name → email → last visit year → insurance → preferred time, for a cleaning)
+- Each answer is validated immediately: wrong type, out of range, or nonsense? It re-asks. ("i like dogs" does not pass as a name, and pain level -2 is rejected.)
+- Once all fields are collected, a **deterministic calculator** computes a cost range using a fixed fee schedule
 
-The key word is **deterministic** — same inputs always produce the same output. The AI never touches the price number. This is intentional: insurance prices have to be auditable and reproducible.
+The key word is **deterministic** — same inputs always produce the same output. The AI never touches the price range. This is intentional: a cost estimate a patient will see has to be auditable and reproducible. Every estimate also says clearly: it's educational, not a diagnosis or a final price.
 
 ---
 
@@ -128,7 +132,7 @@ The browser gets words as they arrive. No waiting for the full response.
 ## How Login / Auth Works
 
 1. You go to `localhost:3000` — if you're not logged in, you see a login screen
-2. You type `admin` / `ivory123` and click Login (use the eye icon to show the password)
+2. You type the username and password that were configured for the demo (they live in a private server file, `frontend/.env.local`) and click Login (use the eye icon to show the password)
 3. The Next.js server checks your credentials against its private environment variables
 4. If correct, it sets a **secure cookie** on your browser (invisible, tamper-proof, expires in 24 hours)
 5. Every page load checks that cookie — if it's valid, you're in; if not, back to login
@@ -141,22 +145,25 @@ The password is only ever checked server-side. It never appears in browser code.
 ## Common Interview Questions — Plain English Answers
 
 **"Walk me through what happens when I type a message."**
-> You type → browser sends it to Next.js → Next.js passes it to FastAPI → FastAPI looks up your conversation history, figures out your intent, runs the right logic → streams the response back word by word → your screen updates in real time.
+> You type → browser sends it to Next.js → Next.js checks your login cookie and passes it to FastAPI → FastAPI loads your conversation from the checkpointer, decides what your message is using the rulebook, runs the right logic → streams the response back word by word → your screen updates in real time.
 
 **"Why LangGraph?"**
-> The quote workflow is like a flowchart with many possible states (asking for car year, asking for driver age, waiting for confirmation, etc.). LangGraph lets you define all those states and transitions explicitly in code — like a real flowchart — instead of a tangled pile of if/else statements.
+> The booking workflow is like a flowchart with many possible states (asking for your name, asking for a pain level, waiting for confirmation, etc.). LangGraph lets you define all those states and transitions explicitly in code — like a real flowchart — instead of a tangled pile of if/else statements. It also remembers each conversation for you.
 
-**"How does mid-quote interruption work?"**
-> When you ask a question during a quote, the bot answers it using the knowledge base, then automatically re-asks the field it was waiting on. Your quote progress is completely preserved because the backend tracks exactly which field you're on.
+**"How does mid-booking interruption work?"**
+> When you ask a question during a booking, the bot answers it using the knowledge base, then automatically re-asks the field it was waiting on. Your booking progress is completely preserved because the backend tracks exactly which field you're on.
 
 **"What corners did you cut?"**
-> Originally: in-memory sessions, fake streaming, password in client code, open CORS, no rate limiting. All five have been fixed. The one genuine remaining item is switching the AI's HTTP calls from synchronous to async — that's the next performance improvement.
+> Originally: a hand-rolled session store, fake streaming, password in client code, open CORS, no rate limiting. All five have been addressed. The genuine remaining items are storing sessions in a real database (they're in memory today) and making the AI's HTTP calls async.
 
 **"How would this scale?"**
-> Sessions are already in Redis (horizontal scaling unlocked). Rate limiting is in. The next bottleneck is the AI HTTP client — it's synchronous, meaning each AI call holds a thread for 1-3 seconds. Switching to async HTTP would let many more users be served simultaneously.
+> Rate limiting is in. The booking flow never calls the AI, so it's cheap. The two bottlenecks are: sessions live in memory (fix: a database-backed checkpointer), and each AI call holds a thread for 1-3 seconds (fix: async HTTP). Both are known, scoped next steps.
 
 **"What happens if the AI goes down?"**
-> The bot falls back to rule-based intent classification (it still routes correctly, just less nuanced). For knowledge questions, it falls back to showing formatted text from retrieved documents — no AI needed. Quote flows work perfectly since the calculator doesn't use the AI at all.
+> Nothing breaks. The rulebook doesn't use the AI at all, so bookings work perfectly. For knowledge questions, the bot falls back to showing formatted text from the retrieved documents — no AI needed.
+
+**"What happens when I accept a visit?"**
+> Three front-desk actions run: a lead is saved to the clinic CRM, an appointment request goes to the scheduling system, and a confirmation email is drafted. If those services aren't set up, each one honestly reports "demo mode" instead — and if one fails, the bot tells you in the same list rather than crashing.
 
 ---
 
@@ -164,18 +171,19 @@ The password is only ever checked server-side. It never appears in browser code.
 
 ### 30 Minutes Before
 - Start the backend Python server (`uvicorn main:app --reload --port 8000`)
-- Wait for it to say the knowledge base is ready
+- Wait for it to say the knowledge base is ready (12 documents, 54 chunks)
 - Check `localhost:8000/debug` — both `knowledge_base: ok` and `llm: ok` should be green
 - Start the frontend (`npm run dev` in the frontend folder)
-- Open `localhost:3000`, log in with `admin` / `ivory123`
-- Do a quick end-to-end test: ask a knowledge question, start a quote, interrupt with a question, complete the quote
+- Open `localhost:3000`, log in with your configured demo credentials
+- Do a quick end-to-end test: ask a dental question, start a booking, interrupt with a question, complete the booking, accept it
 
 ### During the Demo
 - **Start with a knowledge question** — shows RAG working
-- **Start a quote** — shows the state machine kicking in
-- **Interrupt with a question mid-quote** — this is the key moment, the bot answers AND comes back to the quote
-- **Complete the quote** — show the quote card
-- **Step 7 script:** "I originally had 5 shortcuts — in-memory sessions, fake streaming, password in client code, open CORS, no rate limiting. All five are fixed. What remains is making the AI HTTP calls fully async."
+- **Start a booking** — shows the state machine kicking in
+- **Interrupt with a question mid-booking** — this is the key moment, the bot answers AND comes back to the booking
+- **Complete the booking** — show the visit card with the estimate range
+- **Accept it** — show the "Front desk actions" list running in demo mode
+- **Closing script:** "I originally had 5 shortcuts — a hand-rolled session store, fake streaming, password in client code, open CORS, no rate limiting. All five are fixed. What remains is a database-backed session store and making the AI HTTP calls fully async."
 
 ### If Something Breaks
 - Backend won't start → check if port 8000 is already in use
@@ -189,6 +197,6 @@ The password is only ever checked server-side. It never appears in browser code.
 
 | File | What it covers |
 |------|----------------|
-| `ARCHITECTURE.md` | Full system design, data flow diagram, every component, all 5 fixes with code references |
-| `QA_PREP.md` | Every likely interview question with a strong answer, code line references, and "gotcha to avoid" for each |
+| `ARCHITECTURE.md` | Full system design, data flow diagram, every component, all the fixes with code references |
+| `QA_PREP.md` | Every likely interview question with a strong answer, code references, and "gotcha to avoid" for each |
 | `DEMO_CHECKLIST.md` | Step-by-step demo script, login flow, what to say at each step, what to do if things break |

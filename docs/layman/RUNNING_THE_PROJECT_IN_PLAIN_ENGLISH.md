@@ -8,8 +8,8 @@ This is the part that:
 
 - stores the conversation state
 - reads the knowledge base
-- decides the next quote step
-- calculates the quote
+- decides the next intake step
+- calculates the visit estimate
 
 It runs on port `8000`.
 
@@ -40,11 +40,12 @@ Then open `http://localhost:3000`.
 
 Try these in order:
 
-1. `What does comprehensive coverage include?`
-2. `I want a quote`
-3. `home`
-4. answer the requested fields with realistic values
-5. ask another insurance question in the middle
-6. continue until the quote is generated
+1. `What does a routine cleaning include?`
+2. `I'd like to book an appointment`
+3. `cleaning`
+4. answer the requested fields with realistic values (name, email, last visit year, insured or self-pay, morning/afternoon/evening)
+5. ask another dental question in the middle
+6. continue until the estimate is generated
+7. reply `accept` and look for the "Front desk actions" list
 
 If that works, the main end-to-end flow is working.

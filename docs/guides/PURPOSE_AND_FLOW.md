@@ -2,43 +2,43 @@
 
 ## What this project is
 
-Ivory is a hybrid insurance assistant.
+Ivory is a hybrid dental front-desk assistant.
 
-It is not just a chatbot and it is not just a quote form.
+It is not just a chatbot and it is not just an appointment form.
 
 Its purpose is to combine:
 
-- conversational insurance Q&A
-- structured quote collection
+- conversational dental Q&A
+- structured visit intake collection
 - clean switching between those two modes
 
-That is the main point of the project from [MASTER.md](/C:/Users/kpg78/Downloads/TENEXT/ivory-chatbot/docs/specs/MASTER.md): prove that one assistant can answer product questions and also run a guided transactional workflow without losing state.
+That is the main point of the project (see `docs/specs/DENTAL_VERTICAL_SPEC.md`): prove that one assistant can answer dental questions and also run a guided transactional workflow without losing state.
 
 ## Why this exists
 
 The use case is simple:
 
-- a user wants to learn about insurance products
-- the same user may decide to ask for a quote
-- while getting that quote, the user may interrupt with product questions
-- the assistant should answer the question and then continue the quote flow
+- a patient wants to learn about dental care and the clinic
+- the same patient may decide to set up a visit
+- while setting up that visit, the patient may interrupt with dental questions
+- the assistant should answer the question and then continue the intake flow
 
 So the product value is:
 
-- fewer drop-offs than a rigid quote form
-- better user guidance than a static FAQ page
-- one continuous experience instead of separate support and quoting tools
+- fewer drop-offs than a rigid intake form
+- better patient guidance than a static FAQ page
+- one continuous experience instead of separate support and booking tools
 
 ## When someone would use this
 
 Typical cases:
 
-- `What types of insurance do you offer?`
-- `What does comprehensive auto coverage include?`
-- `I want a quote for auto insurance.`
-- `I started a quote, but I need to ask something before I continue.`
+- `What dental services do you offer?`
+- `What does a routine cleaning include?`
+- `I'd like to book a cleaning.`
+- `I started booking, but I need to ask something before I continue.`
 
-The whole project is meant for a user who is still deciding, still learning, or partially ready to buy.
+The whole project is meant for a patient who is still deciding, still learning, or partially ready to book.
 
 ## Core product idea
 
@@ -46,40 +46,40 @@ This project has two modes.
 
 ### 1. Conversational mode
 
-The assistant answers insurance questions using the knowledge base.
+The assistant answers dental questions using the knowledge base.
 
 Examples:
 
-- coverage details
-- exclusions
-- claims process
-- pricing tier differences
-- eligibility FAQs
+- what happens during a checkup
+- emergency first steps (toothache, chipped tooth, swelling)
+- cosmetic treatment options
+- pricing, insurance, and payment questions
+- clinic FAQs (hours, parking, cancellation policy)
 
 ### 2. Transactional mode
 
-The assistant guides the user through quote collection.
+The assistant guides the user through visit intake.
 
 Examples:
 
-- identify insurance type
+- identify the service (cleaning, emergency, cosmetic)
 - collect required details
 - validate inputs
-- generate a quote
+- generate a visit estimate
 - let the user confirm, adjust, or restart
 
 ## Why the state machine matters
 
-This project uses a state-machine style backend because normal chat is not enough for quoting.
+This project uses a state-machine style backend because normal chat is not enough for intake.
 
-A quote flow needs memory of:
+An intake flow needs memory of:
 
-- what product the user chose
+- what service the patient chose
 - what fields are already collected
 - what field is missing next
-- whether the user is confirming or adjusting
+- whether the patient is confirming or adjusting
 
-Without state, the assistant would lose context too easily and the quote flow would feel unreliable.
+Without state, the assistant would lose context too easily and the intake flow would feel unreliable.
 
 ## Frontend flow
 
@@ -91,12 +91,12 @@ This is the main working page.
 
 The user can:
 
-- ask product questions
-- start a quote
-- continue answering quote questions
+- ask dental questions
+- start an intake
+- continue answering intake questions
 - reset the session
 - see the current backend state
-- see the current quote summary
+- see the current visit estimate
 
 The dashboard is the primary workspace.
 
@@ -107,17 +107,16 @@ There are three practical parts:
 1. The main chat area
    This is where the conversation happens.
 
-2. The session state panel
-   This shows:
-   - current mode
-   - insurance type
-   - current step
-   - next required field
+2. The state chips in the header
+   These show:
+   - the flow chip: service and step (e.g. `cleaning intake · collect`)
+   - the status chip: `Knowledge mode`, `Collecting details`, or `Estimate ready`
+   - a progress bar for the intake steps
 
-3. The quote summary card
-   This shows the generated quote when available.
+3. The visit card
+   This shows the generated estimate range and collected details when available.
 
-### Confirmation page: `/quote-confirmation`
+### Confirmation page: `/visit-confirmation`
 
 This page is only for the final confirmation stage.
 
@@ -126,13 +125,14 @@ It should only be used when the backend says the session is ready for confirmati
 That means:
 
 - `mode = transactional`
-- `quote_step = confirm`
-- a real `quote_result` exists
+- `intake_step = confirm`
+- a real `visit_estimate` exists
 
 On this page, the user can:
 
-- accept the quote
-- adjust coverage
+- accept and book the visit
+- adjust the details
+- call the clinic instead
 
 ## Backend flow
 
@@ -141,9 +141,9 @@ The backend is the source of truth.
 It decides:
 
 - whether the user is in conversational or transactional mode
-- what the current quote step is
+- what the current intake step is
 - what field is missing
-- whether a quote is ready
+- whether an estimate is ready
 - whether the session is in confirmation state
 
 The frontend should not invent this state on its own.
@@ -160,51 +160,52 @@ Each chat session tracks structured state, including:
 
 - `mode`
 - `intent`
-- `quote_step`
-- `insurance_type`
+- `intake_step`
+- `service_type`
 - `current_field`
-- `quote_result`
+- `visit_estimate`
 
-That is what keeps the chat and quote flow consistent across the UI.
+That is what keeps the chat and intake flow consistent across the UI.
 
 ## Typical user journey
 
 ### Journey A: question only
 
 1. User opens the dashboard.
-2. User asks an insurance question.
+2. User asks a dental question.
 3. Backend routes to the knowledge path.
 4. Assistant answers using retrieved knowledge base content.
 
-### Journey B: quote flow
+### Journey B: intake flow
 
-1. User says they want a quote.
+1. User says they want to book a visit.
 2. Backend switches into transactional mode.
 3. Assistant asks for required fields.
 4. User answers step by step.
 5. Backend validates the data.
-6. Backend generates a quote.
+6. Backend generates a visit estimate.
 7. User reviews and accepts or adjusts.
+8. On accept, the front-desk actions run (CRM lead, booking request, confirmation email — dry-run without keys).
 
 ### Journey C: mid-flow interruption
 
-1. User starts a quote.
-2. Assistant is collecting quote details.
-3. User interrupts with a product question.
+1. User starts an intake.
+2. Assistant is collecting intake details.
+3. User interrupts with a dental question.
 4. Backend answers the question.
-5. Backend preserves collected quote data.
-6. Assistant resumes the quote flow.
+5. Backend preserves collected intake data.
+6. Assistant resumes the intake flow.
 
 That third journey is one of the most important reasons this project is worth using.
 
 ## Why use this instead of a normal form
 
-A normal quote form is faster to build, but worse at handling uncertainty.
+A normal intake form is faster to build, but worse at handling uncertainty.
 
 This assistant is useful because it can:
 
-- educate while collecting quote data
-- reduce friction when the user is unsure
+- educate while collecting intake data
+- reduce friction when the patient is unsure
 - recover cleanly from interruptions
 - keep one conversation instead of forcing the user through separate pages and tools
 
@@ -213,7 +214,7 @@ So the value is not just “chat UI”.
 The value is:
 
 - guided decision support
-- structured quote handling
+- structured intake handling
 - context preservation
 
 ## About adding more knowledge base content
@@ -222,16 +223,15 @@ Yes, adding more knowledge base content can help, but only if it is targeted.
 
 ### When more knowledge base content helps
 
-It helps when you add information that improves real product questions, such as:
+It helps when you add information that improves real patient questions, such as:
 
-- product coverage details
-- exclusions and limitations
-- deductible rules
-- claim filing steps
-- policy renewal and cancellation rules
-- bundling discounts
-- eligibility rules
-- product comparisons
+- what specific treatments involve
+- aftercare guidance
+- emergency first steps
+- insurance and payment rules
+- clinic policies (cancellation, forms, parking)
+- children's dentistry guidance
+- prevention advice
 
 This makes conversational mode more useful and makes the demo feel more complete.
 
@@ -244,7 +244,8 @@ Examples:
 - multiple chunks saying the same thing
 - marketing copy without factual value
 - content unrelated to the actual user prompts
-- large policy text that the assistant never needs
+- large clinical text that the assistant never needs
+- anything not grounded in public-domain sources (the corpus is NIDCR/CDC grounded — never ADA content)
 
 Too much noisy content can weaken retrieval quality.
 
@@ -253,30 +254,30 @@ Too much noisy content can weaken retrieval quality.
 The best approach is:
 
 - keep the knowledge base compact
-- cover the most likely user questions well
-- organize content by product and policy topic
+- cover the most likely patient questions well
+- organize content by service and health topic
 - avoid duplicate chunks
 - prefer short, clear, factual documents over long vague ones
+- end every document with a `Sources:` line
 
 Good categories to expand next:
 
-- auto coverage inclusions and exclusions
-- home coverage scenarios
-- life policy eligibility and exclusions
-- claims examples
-- deductible and coverage-level comparisons
-- cancellation and refund policy
+- root canals and crowns
+- wisdom teeth
+- dry mouth and medication side effects
+- pregnancy and oral health
+- dental X-ray safety
 
 ## Short version
 
 This project is useful because it combines:
 
-- insurance Q&A
-- guided quote generation
+- dental Q&A
+- guided visit estimation
 - stateful interruption handling
 
 The frontend gives the user one main dashboard to work through that flow.
 The backend keeps the flow consistent.
 The knowledge base supports grounded answers.
 
-If you expand the knowledge base, do it to improve answer quality for likely insurance questions, not just to make the repo look bigger.
+If you expand the knowledge base, do it to improve answer quality for likely patient questions, not just to make the repo look bigger.
