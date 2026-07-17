@@ -56,6 +56,26 @@ INTAKE_INTENT_HINTS = (
     "set up a visit",
     "sign up",
 )
+# First-person "I want / I need this service" phrasing. Paired with a detected
+# service (and no question mark) it starts an intake — "I want veneers" books,
+# while "tell me about veneers" or "is whitening safe?" stay knowledge queries.
+SERVICE_SEEK_HINTS = (
+    "i have",
+    "i need",
+    "i want",
+    "i'd like",
+    "i would like",
+    "need a",
+    "need an",
+    "want a",
+    "want an",
+    "have a",
+    "have an",
+    "get a",
+    "get an",
+    "looking for",
+    "set up",
+)
 # A confirm-step reply containing any of these is a rejection, never an accept
 # ("no, this is not ok" must not book the appointment).
 NEGATION_TOKENS = {
@@ -117,10 +137,18 @@ def decide(state: dict[str, Any], message: str) -> str:
             return "identify"
         return "rag"
 
-    # P7 — Idle/conversational. Only an explicit, non-question visit intent
-    #      starts an intake; everything else is a knowledge question.
-    if "?" not in text and _contains_any(text, INTAKE_INTENT_HINTS):
-        return "start_intake"
+    # P7 — Idle/conversational. A non-question starts an intake when it carries
+    #      an explicit visit intent, when it declares an emergency (always
+    #      triaged in, never lectured at), or when it names a service the user
+    #      says they want. Everything else is a knowledge question.
+    if "?" not in text:
+        if _contains_any(text, INTAKE_INTENT_HINTS):
+            return "start_intake"
+        service = detect_service(text)
+        if service == "emergency":
+            return "start_intake"
+        if service and _contains_any(text, SERVICE_SEEK_HINTS):
+            return "start_intake"
     return "rag"
 
 

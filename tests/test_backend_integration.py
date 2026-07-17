@@ -198,7 +198,10 @@ def test_rag_fallback_returns_clean_direct_answer_without_llm(client: TestClient
     events = _post_chat(client, "fallback-rag-session", "What does a routine cleaning include?")
 
     message = events[-1]["data"]["message"].lower()
-    assert "routine dental cleaning includes removing plaque" in message
+    # On-topic, direct answer (curated for common cleaning questions) with no
+    # chunk-dump preamble. Asserted on stable keywords, not exact wording.
+    assert "removing plaque" in message
+    assert "exam" in message
     assert "based on the knowledge base" not in message
 
 
@@ -296,7 +299,7 @@ def test_mid_flow_question_preserves_intake_progress(client: TestClient) -> None
     question_events = _post_chat(client, session_id, "What does a routine cleaning include?")
     question_message = question_events[-1]["data"]["message"]
 
-    assert "routine dental cleaning includes" in question_message.lower()
+    assert "removing plaque" in question_message.lower()
     expected_resume = (
         "\n\nNow, back to your cleaning visit intake — "
         f"{CONTACT_EMAIL_PROMPT}"
@@ -320,7 +323,7 @@ def test_mid_intake_question_answers_then_resumes_first_field(client: TestClient
     events = _post_chat(client, session_id, "What does a routine cleaning include?")
     payload = events[-1]["data"]
 
-    assert "routine dental cleaning includes" in payload["message"].lower()
+    assert "removing plaque" in payload["message"].lower()
     assert payload["message"].endswith(
         f"\n\nNow, back to your cleaning visit intake — {PATIENT_NAME_PROMPT}"
     )

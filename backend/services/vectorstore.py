@@ -359,6 +359,37 @@ def _combine_results(
     return results
 
 
+# Deterministic topic → owning-document affinity. This is a lexical safety net
+# for the offline hash-embedding fallback (and a small nudge for the real
+# sentence-transformer path): when a query carries an unambiguous intent word,
+# the document that owns that topic gets a boost so it is not buried by
+# incidental token overlap in other docs. Keyed by a substring of the source
+# filename; matched against the (tokenized, lowercased) query.
+_TOPIC_AFFINITY: dict[str, frozenset[str]] = {
+    "01_clinic_overview": frozenset(
+        {"services", "service", "offer", "hours", "open", "opening", "address",
+         "location", "located", "parking", "directions", "team"}
+    ),
+    "03_dental_emergencies": frozenset(
+        {"emergency", "urgent", "knocked", "broken", "chipped", "toothache",
+         "swelling", "bleeding", "trauma", "avulsed", "cracked"}
+    ),
+    "04_cosmetic_dentistry": frozenset(
+        {"whitening", "whiten", "veneers", "veneer", "aligners", "bonding", "cosmetic"}
+    ),
+    "05_pricing_and_estimates": frozenset({"cost", "costs", "price", "pricing", "estimate", "fee", "fees"}),
+    "06_insurance_and_payment": frozenset({"insurance", "insured", "payment", "financing", "plan", "plans", "billing"}),
+    "07_faq": frozenset({"cancellation", "cancel", "policy", "forms", "paperwork", "hours"}),
+    "08_tooth_decay_and_cavities": frozenset({"cavity", "cavities", "decay", "filling", "fillings"}),
+    "09_gum_disease": frozenset({"gum", "gums", "gingivitis", "periodontal", "periodontitis", "bleeding"}),
+    "10_children_and_family_dentistry": frozenset(
+        {"child", "children", "kid", "kids", "baby", "toddler", "pediatric", "sealant", "sealants", "fluoride", "family"}
+    ),
+    "11_oral_cancer_screening": frozenset({"cancer", "screening", "biopsy", "lesion"}),
+    "12_aftercare_scenarios": frozenset({"aftercare", "extraction", "sensitive", "sensitivity", "recovery", "healing"}),
+}
+
+
 def _rerank_results(
     query_text: str,
     results: Sequence[RetrievedChunk],
@@ -383,9 +414,13 @@ def _rerank_results(
         score += source_overlap * 0.2
         score += min(content_overlap, 8) * 0.08
 
-        if "offer" in query_tokens and {"service", "services", "treatment", "treatments"} & query_tokens:
-            if {"cleaning", "emergency", "cosmetic"} & content_tokens:
-                score += 0.35
+        source = (result.source or "").lower()
+        for key, keywords in _TOPIC_AFFINITY.items():
+            if key in source:
+                affinity = len(query_tokens & keywords)
+                if affinity:
+                    score += min(affinity, 3) * 0.4
+                break
 
         reranked.append((score, result))
 

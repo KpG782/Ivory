@@ -1,0 +1,20 @@
+{"query": "what should I do about a toothache", "expected_sources": ["03_dental_emergencies.md"], "tag": "emergency"}
+{"query": "my tooth got knocked out what do I do", "expected_sources": ["03_dental_emergencies.md"], "tag": "emergency"}
+{"query": "how much does teeth whitening cost", "expected_sources": ["04_cosmetic_dentistry.md", "05_pricing_and_estimates.md"], "tag": "cosmetic-pricing"}
+{"query": "tell me about veneers and bonding", "expected_sources": ["04_cosmetic_dentistry.md"], "tag": "cosmetic"}
+{"query": "what happens during a routine cleaning", "expected_sources": ["02_routine_checkups_and_cleanings.md"], "tag": "cleaning"}
+{"query": "how often should I get a checkup", "expected_sources": ["02_routine_checkups_and_cleanings.md"], "tag": "cleaning"}
+{"query": "what dental services do you offer", "expected_sources": ["01_clinic_overview.md"], "tag": "overview"}
+{"query": "what are your opening hours and address", "expected_sources": ["01_clinic_overview.md", "07_faq.md"], "tag": "clinic"}
+{"query": "do you accept dental insurance and payment plans", "expected_sources": ["06_insurance_and_payment.md"], "tag": "payment"}
+{"query": "how much is an emergency visit", "expected_sources": ["05_pricing_and_estimates.md", "03_dental_emergencies.md"], "tag": "pricing"}
+{"query": "what causes cavities and tooth decay", "expected_sources": ["08_tooth_decay_and_cavities.md"], "tag": "education"}
+{"query": "my gums bleed when I brush", "expected_sources": ["09_gum_disease.md"], "tag": "education"}
+{"query": "are dental sealants good for kids", "expected_sources": ["10_children_and_family_dentistry.md"], "tag": "pediatric"}
+{"query": "when should my child first see a dentist", "expected_sources": ["10_children_and_family_dentistry.md"], "tag": "pediatric"}
+{"query": "what is an oral cancer screening", "expected_sources": ["11_oral_cancer_screening.md"], "tag": "education"}
+{"query": "how do I care for my mouth after a tooth extraction", "expected_sources": ["12_aftercare_scenarios.md"], "tag": "aftercare"}
+{"query": "my teeth are sensitive after whitening", "expected_sources": ["12_aftercare_scenarios.md", "04_cosmetic_dentistry.md"], "tag": "aftercare"}
+{"query": "what is your cancellation policy", "expected_sources": ["07_faq.md"], "tag": "faq"}
+{"query": "do I need to fill out new patient forms", "expected_sources": ["07_faq.md", "01_clinic_overview.md"], "tag": "faq"}
+{"query": "is fluoride safe for children", "expected_sources": ["10_children_and_family_dentistry.md"], "tag": "pediatric"}

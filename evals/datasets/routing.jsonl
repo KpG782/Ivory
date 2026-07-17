@@ -1,0 +1,44 @@
+{"state": "idle", "message": "I'd like to book a cleaning", "expected": "start_intake", "tag": "booking"}
+{"state": "idle", "message": "book an appointment please", "expected": "start_intake", "tag": "booking"}
+{"state": "idle", "message": "can I schedule a checkup", "expected": "start_intake", "tag": "booking"}
+{"state": "idle", "message": "I need to come in for a cleaning", "expected": "start_intake", "tag": "intent"}
+{"state": "idle", "message": "how much does a cleaning cost?", "expected": "rag", "tag": "question"}
+{"state": "idle", "message": "do you offer teeth whitening?", "expected": "rag", "tag": "question"}
+{"state": "idle", "message": "what are your hours?", "expected": "rag", "tag": "question"}
+{"state": "idle", "message": "where are you located", "expected": "rag", "tag": "question"}
+{"state": "idle", "message": "hi", "expected": "rag", "tag": "greeting"}
+{"state": "idle", "message": "what should I do about a toothache?", "expected": "rag", "tag": "question"}
+{"state": "idle", "message": "do you take insurance?", "expected": "rag", "tag": "question"}
+{"state": "idle", "message": "tell me about veneers", "expected": "rag", "tag": "question"}
+{"state": "idle", "message": "I found you on facebook, what are your hours?", "expected": "rag", "tag": "adversarial"}
+{"state": "idle", "message": "my tooth really hurts, I need to be seen today", "expected": "rag", "tag": "adversarial-emergency"}
+{"state": "collect_year", "message": "2019", "expected": "collect", "tag": "field-value"}
+{"state": "collect_year", "message": "2024", "expected": "collect", "tag": "field-value"}
+{"state": "collect_year", "message": "last year", "expected": "collect", "tag": "field-value"}
+{"state": "collect_year", "message": "what does a cleaning include?", "expected": "answer_then_resume", "tag": "interrupt"}
+{"state": "collect_year", "message": "how much does whitening cost?", "expected": "answer_then_resume", "tag": "interrupt-booking-word"}
+{"state": "collect_year", "message": "wait, what's your cancellation policy?", "expected": "answer_then_resume", "tag": "interrupt"}
+{"state": "collect_year", "message": "actually I want to book an emergency visit", "expected": "start_intake", "tag": "service-switch"}
+{"state": "collect_year", "message": "restart", "expected": "confirm", "tag": "restart"}
+{"state": "collect_year", "message": "start over", "expected": "confirm", "tag": "restart"}
+{"state": "collect_year", "message": "I don't remember", "expected": "collect", "tag": "field-value"}
+{"state": "collect_name", "message": "Maria Santos", "expected": "collect", "tag": "field-value"}
+{"state": "collect_name", "message": "Booker Smith", "expected": "collect", "tag": "adversarial-name"}
+{"state": "confirm", "message": "accept", "expected": "confirm", "tag": "decision"}
+{"state": "confirm", "message": "yes that works", "expected": "confirm", "tag": "decision"}
+{"state": "confirm", "message": "adjust", "expected": "confirm", "tag": "decision"}
+{"state": "confirm", "message": "restart", "expected": "confirm", "tag": "restart"}
+{"state": "confirm", "message": "how much would whitening cost instead?", "expected": "answer_then_resume", "tag": "interrupt-at-confirm"}
+{"state": "confirm", "message": "wait, do you offer payment plans?", "expected": "answer_then_resume", "tag": "interrupt-at-confirm"}
+{"state": "confirm", "message": "book a cosmetic consultation", "expected": "start_intake", "tag": "service-switch"}
+{"state": "identify", "message": "cleaning", "expected": "identify", "tag": "service-pick"}
+{"state": "identify", "message": "an emergency", "expected": "identify", "tag": "service-pick"}
+{"state": "identify", "message": "cosmetic please", "expected": "identify", "tag": "service-pick"}
+{"state": "identify", "message": "what's the difference between them?", "expected": "rag", "tag": "question-at-identify"}
+{"state": "identify", "message": "yes", "expected": "identify", "tag": "affirm-at-identify"}
+{"state": "idle", "message": "I have a dental emergency", "expected": "start_intake", "tag": "emergency-triage"}
+{"state": "idle", "message": "I chipped a tooth", "expected": "start_intake", "tag": "emergency-triage"}
+{"state": "idle", "message": "I want veneers", "expected": "start_intake", "tag": "service-seek"}
+{"state": "idle", "message": "I need a cleaning", "expected": "start_intake", "tag": "service-seek"}
+{"state": "idle", "message": "is teeth whitening safe?", "expected": "rag", "tag": "question"}
+{"state": "idle", "message": "what is a dental emergency?", "expected": "rag", "tag": "question"}

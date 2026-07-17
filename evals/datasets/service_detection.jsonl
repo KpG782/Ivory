@@ -1,0 +1,18 @@
+{"message": "I'd like to book a cleaning", "expected": "cleaning", "tag": "direct"}
+{"message": "can I get a checkup", "expected": "cleaning", "tag": "synonym"}
+{"message": "time for my routine exam", "expected": "cleaning", "tag": "synonym"}
+{"message": "I need a dental hygiene appointment", "expected": "cleaning", "tag": "synonym"}
+{"message": "my regular check-up is due", "expected": "cleaning", "tag": "synonym"}
+{"message": "I have a dental emergency", "expected": "emergency", "tag": "direct"}
+{"message": "this is urgent, my tooth broke", "expected": "emergency", "tag": "synonym"}
+{"message": "I chipped a tooth", "expected": "emergency", "tag": "synonym"}
+{"message": "I have a broken tooth", "expected": "emergency", "tag": "synonym"}
+{"message": "I want a cosmetic consultation", "expected": "cosmetic", "tag": "direct"}
+{"message": "interested in teeth whitening", "expected": "cosmetic", "tag": "synonym"}
+{"message": "can you do veneers", "expected": "cosmetic", "tag": "synonym"}
+{"message": "I want a smile makeover", "expected": "cosmetic", "tag": "synonym"}
+{"message": "looking into clear aligners", "expected": "cosmetic", "tag": "synonym"}
+{"message": "what are your hours", "expected": null, "tag": "no-service"}
+{"message": "do you take my insurance", "expected": null, "tag": "no-service"}
+{"message": "hello", "expected": null, "tag": "no-service"}
+{"message": "where do I park", "expected": null, "tag": "no-service"}

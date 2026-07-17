@@ -183,6 +183,18 @@ Run the backend test suite from the repo root:
 backend/.venv/bin/python -m pytest tests/ -q   # 56 passed
 ```
 
+### Quality evals
+
+Beyond the functional suite, an offline [eval harness](evals/README.md) scores
+aggregate quality — routing accuracy, service detection, retrieval recall,
+RAG-answer rubric, and multi-turn guardrail scenarios (104 labeled cases,
+100% at current gates):
+
+```bash
+backend/.venv/bin/python evals/run_evals.py                     # scorecard
+backend/.venv/bin/python -m pytest evals/test_eval_gates.py -q  # CI gate
+```
+
 ## Key Invariants
 
 - backend state is the source of truth

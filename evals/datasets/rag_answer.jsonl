@@ -1,0 +1,6 @@
+{"query": "what should I do about a toothache", "must_include_any": ["rinse", "floss", "dentist", "pain"], "must_not_include": ["based on the knowledge base", "insurance premium", "vehicle"], "tag": "emergency"}
+{"query": "what dental services do you offer", "must_include_any": ["cleaning", "emergency", "cosmetic"], "must_not_include": ["based on the knowledge base"], "tag": "overview"}
+{"query": "tell me about teeth whitening", "must_include_any": ["whiten", "peroxide", "sensitiv", "color"], "must_not_include": ["based on the knowledge base"], "tag": "cosmetic"}
+{"query": "are dental sealants worth it", "must_include_any": ["sealant", "protective", "cavit", "back teeth"], "must_not_include": ["based on the knowledge base"], "tag": "pediatric"}
+{"query": "my tooth got knocked out", "must_include_any": ["socket", "milk", "moist", "immediately", "dentist"], "must_not_include": ["based on the knowledge base"], "tag": "emergency"}
+{"query": "what happens during a routine cleaning", "must_include_any": ["plaque", "exam", "clean", "tartar", "polish"], "must_not_include": ["based on the knowledge base"], "tag": "cleaning"}
